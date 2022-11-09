@@ -1,77 +1,66 @@
 import {defs, tiny} from './examples/common.js';
-import {Cube} from './block.js';
+import {Block, block_materials, block_colors} from './block.js';
 //import {Block_shader} from "./block_shader";
 
 const {
     Vector, Vector3, vec, vec3, vec4, color, hex_color, Shader, Matrix, Mat4, Light, Shape, Material, Scene,
 } = tiny;
 
-class Cube_Outline extends Shape {
-    constructor() {
-        super("position", "color");
-        //  TODO (Requirement 5).
-        // When a set of lines is used in graphics, you should think of the list entries as
-        // broken down into pairs; each pair of vertices will be drawn as a line segment.
-        // Note: since the outline is rendered with Basic_shader, you need to redefine the position and color of each vertex
-        this.arrays.position = Vector3.cast(
-            [-1, -1, -1], [1, -1, -1], [-1, -1, -1], [-1, 1, -1], [1, 1, -1], [1, -1, -1], [1, 1, -1], [-1, 1, -1],
-            [-1, -1, -1], [-1, -1, 1], [1, 1, 1], [1, 1, -1], [-1, 1, 1], [-1, 1, -1], [1, -1, 1], [1, -1, -1],
-            [1, 1, 1], [1, -1, 1], [1, 1, 1], [-1, 1, 1],[-1, -1, 1], [-1, 1, 1], [-1, -1, 1], [1, -1, 1]);
-        this.arrays.color = Vector3.cast(
-            [1, 1, 1], [1, 1, 1], [1, 1, 1], [1, 1, 1], [1, 1, 1], [1, 1, 1], [1, 1, 1], [1, 1, 1],
-            [1, 1, 1], [1, 1, 1], [1, 1, 1], [1, 1, 1], [1, 1, 1], [1, 1, 1], [1, 1, 1], [1, 1, 1],
-            [1, 1, 1], [1, 1, 1], [1, 1, 1], [1, 1, 1], [1, 1, 1], [1, 1, 1], [1, 1, 1], [1, 1, 1],
-            [1, 1, 1], [1, 1, 1], [1, 1, 1], [1, 1, 1], [1, 1, 1], [1, 1, 1], [1, 1, 1], [1, 1, 1]);
-        this.indices = false;
-    }
-}
+//Size of the map
+const MAX_LEVEL = 8;
+const MAX_ROW = 6;
+const MAX_COL = 6;
 
-class Cube_Single_Strip extends Shape {
+export class Beyond_tetris extends Scene {
     constructor() {
-        super("position", "normal");
-        // TODO (Requirement 6)
-        this.arrays.position = Vector3.cast(
-            [-1, -1, -1], [1, -1, -1], [-1, -1, 1], [1, -1, 1], [1, 1, -1], [-1, 1, -1], [1, 1, 1], [-1, 1, 1],
-            [-1, -1, -1], [-1, -1, 1], [-1, 1, -1], [-1, 1, 1], [1, -1, 1], [1, -1, -1], [1, 1, 1], [1, 1, -1],
-            [-1, -1, 1], [1, -1, 1], [-1, 1, 1], [1, 1, 1], [1, -1, -1], [-1, -1, -1], [1, 1, -1], [-1, 1, -1]);
-        this.arrays.normal = Vector3.cast(
-            [-1, -1, -1], [1, -1, -1], [-1, -1, 1], [1, -1, 1], [1, 1, -1], [-1, 1, -1], [1, 1, 1], [-1, 1, 1],
-            [-1, -1, -1], [-1, -1, 1], [-1, 1, -1], [-1, 1, 1], [1, -1, 1], [1, -1, -1], [1, 1, 1], [1, 1, -1],
-            [-1, -1, 1], [1, -1, 1], [-1, 1, 1], [1, 1, 1], [1, -1, -1], [-1, -1, -1], [1, 1, -1], [-1, 1, -1]);
-    }
-}
-
-
-class Base_Scene extends Scene {
-    /**
-     *  **Base_scene** is a Scene that can be added to any display canvas.
-     *  Setup the shapes, materials, camera, and lighting here.
-     */
-    constructor() {
-        // constructor(): Scenes begin by populating initial values like the Shapes and Materials they'll need.
         super();
-        this.hover = this.swarm = false;
-        // At the beginning of our program, load one of each of these shape definitions onto the GPU.
+
+        //Initialize the value of this.block_map
+        this.initialize_map();
+
+        //Record the current active piece as array of 4 blocks position [[x, y, z], [], [], []]
+        this.current = null;
+
         this.shapes = {
-            'cube': new Cube(),
-            'outline': new Cube_Outline(),
-            'strip': new Cube_Single_Strip(),
+            'block': new Block(),
         };
 
-        // *** Materials
-        this.materials = {
-            plastic: new Material(new defs.Phong_Shader(),
-                {ambient: .4, diffusivity: .6, color: hex_color("#ffffff")}),
-        };
-        // The white material and basic shader are used for drawing the outline.
-        this.white = new Material(new defs.Basic_Shader());
+        this.materials = block_materials;
+    }
+
+
+    initialize_map() {
+        //this.block_map records all blocks in the scene
+        this.block_map = new Array(MAX_LEVEL);
+        for (let level = 0; level < MAX_LEVEL; level++) {
+            let each_l = new Array(MAX_ROW);
+            for (let row = 0; row < MAX_ROW; row++) {
+                let each_r = new Array(MAX_COL);
+                for (let col = 0; col < MAX_COL; col++) {
+                    each_r[col] = 0;
+                }
+                each_l[row] = each_r;
+            }
+            this.block_map[level] = each_l;
+        }
+    }
+
+
+    make_control_panel() {
+        // Draw the scene's buttons, setup their actions and keyboard shortcuts, and monitor live measurements.
+        this.key_triggered_button("restart", ["c"], () => {
+
+        });
+        // Add a button for controlling the scene.
+        this.key_triggered_button("Outline", ["o"], () => {
+
+        });
+        this.key_triggered_button("Sit still", ["m"], () => {
+
+        });
     }
 
     display(context, program_state) {
-        // display():  Called once per frame of animation. Here, the base class's display only does
-        // some initial setup.
-
-        // Setup -- This part sets up the scene's overall camera matrix, projection matrix, and lights:
         if (!context.scratchpad.controls) {
             this.children.push(context.scratchpad.controls = new defs.Movement_Controls());
             // Define the global camera and projection matrices, which are stored in program_state.
@@ -83,98 +72,38 @@ class Base_Scene extends Scene {
         // *** Lights: *** Values of vector or point lights.
         const light_position = vec4(0, 5, 5, 1);
         program_state.lights = [new Light(light_position, color(1, 1, 1, 1), 1000)];
-    }
-}
 
-export class Beyond_tetris extends Base_Scene {
-    /**
-     * This Scene object can be added to any display canvas.
-     * We isolate that code so it can be experimented with on its own.
-     * This gives you a very small code sandbox for editing a simple scene, and for
-     * experimenting with matrix transformations.
-     */
-    constructor() {
-        super();
-        this.set_colors();
-        this.outline = false;
-    }
 
-    set_colors() {
-        // TODO:  Create a class member variable to store your cube's colors.
-        // Hint:  You might need to create a member variable at somewhere to store the colors, using `this`.
-        // Hint2: You can consider add a constructor for class Beyond_tetris, or add member variables in Base_Scene's constructor.
-        this.colors = [];
-        let i = 0;
-        for (i; i < 8; i++) {
-            this.colors.push(color(Math.random(), Math.random(), Math.random(), 1.0));
-        }
-    }
 
-    make_control_panel() {
-        // Draw the scene's buttons, setup their actions and keyboard shortcuts, and monitor live measurements.
-        this.key_triggered_button("Change Colors", ["c"], this.set_colors);
-        // Add a button for controlling the scene.
-        this.key_triggered_button("Outline", ["o"], () => {
-            // TODO:  Requirement 5b:  Set a flag here that will toggle your outline on and off
-            this.outline = !this.outline;
-        });
-        this.key_triggered_button("Sit still", ["m"], () => {
-            // TODO:  Requirement 3d:  Set a flag here that will toggle your swaying motion on and off.
-            this.hover = !this.hover;
-        });
-    }
-
-    draw_box(context, program_state, model_transform, i) {
-        // TODO:  Helper function for requirement 3 (see hint).
-        //        This should make changes to the model_transform matrix, draw the next box, and return the newest model_transform.
-        // Hint:  You can add more parameters for this function, like the desired color, index of the box, etc.
-        model_transform = model_transform.times(Mat4.translation(-1, 1.5, 0));
-        if (!this.hover)
-            model_transform = model_transform.times(Mat4.rotation(this.rotate_angle(this.t), 0,0,1));
-        else
-            model_transform = model_transform.times(Mat4.rotation(0.05*Math.PI, 0,0,1));
-        model_transform = model_transform.times(Mat4.translation(1, 1.5, 0));
-        let temp_transform = model_transform.times(Mat4.scale(1, 1.5, 1));
-
-        if (this.outline) {
-            this.shapes.outline.draw(context, program_state, temp_transform, this.white, "LINES");
-        } else {
-            if (i % 2 === 1) {
-                this.shapes.strip.draw(context, program_state, temp_transform, this.materials.plastic.override({color: this.colors[i]}), "TRIANGLE_STRIP");
-            }
-            else {
-                this.shapes.cube.draw(context, program_state, temp_transform, this.materials.plastic.override({color: this.colors[i]}));
-            }
-
-        }
-
-        return model_transform;
-    }
-
-    rotate_angle(time){
-        return 0.05*Math.PI*Math.abs(Math.sin(time*Math.PI/3000));
-    }
-
-    display(context, program_state) {
-        super.display(context, program_state);
-        const blue = hex_color("#1a9ffa");
         let model_transform = Mat4.identity();
         const t = this.t = program_state.animation_time;
+        //this.shapes.block.draw(context, program_state, model_transform, this.materials.plastic);
 
-        let temp_transform = model_transform.times(Mat4.scale(1, 1.5, 1));
-        if (this.outline) {
-            this.shapes.outline.draw(context, program_state, temp_transform, this.white, "LINES");
-        } else {
-            this.shapes.cube.draw(context, program_state, temp_transform, this.materials.plastic.override({color: this.colors[0]}));
+        //For testing
+        model_transform = model_transform.times(Mat4.translation(-6, 0, -6));
+
+        //Display all blocks in the block_map
+
+        //For testing
+        this.block_map[0][0][0] = 1;
+        this.block_map[0][2][0] = 3;
+        this.block_map[0][0][3] = 3;
+        this.block_map[1][0][0] = 2;
+        //this.shapes.block.draw(context, program_state, model_transform, this.materials.plastic.override({color: block_colors[1]}));
+        for (let level = 0; level < MAX_LEVEL; level++) {
+            for (let row = 0; row < MAX_ROW; row++) {
+                for (let col = 0; col < MAX_COL; col++) {
+                    if (this.block_map[level][row][col] !== 0) {
+                        this.shapes.block.draw(context, program_state, model_transform,
+                            this.materials.plastic.override({color: block_colors[this.block_map[level][row][col]]}));
+                    }
+                    model_transform = model_transform.times(Mat4.translation(2, 0, 0));
+                }
+                model_transform = model_transform.times(Mat4.translation(-12, 0, 2));
+            }
+            model_transform = model_transform.times(Mat4.translation(0, 2, -12));
         }
 
-        let i = 1;
-        for (i; i < 8; i++) {
-            model_transform = this.draw_box(context, program_state, model_transform, i);
-        }
 
-
-        //this.shapes.cube.draw(context, program_state, model_transform, this.materials.plastic.override({color:blue}));
-        // TODO:  Draw your entire scene here.  Use this.draw_box( graphics_state, model_transform ) to call your helper.
     }
 }

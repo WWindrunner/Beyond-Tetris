@@ -4,7 +4,7 @@ const {
     Vector, Vector3, vec, vec3, vec4, color, hex_color, Shader, Matrix, Mat4, Light, Shape, Material, Scene,
 } = tiny;
 
-class Cube extends Shape {
+class Block extends Shape {
     constructor() {
         super("position", "normal",);
         // Loop 3 times (for each axis), and inside loop twice (for opposing cube sides):
@@ -22,4 +22,15 @@ class Cube extends Shape {
     }
 }
 
-export {Cube};
+const block_materials = {
+    plastic: new Material(new defs.Phong_Shader(),
+        {ambient: .4, diffusivity: .6, color: hex_color("#ffffff")}),
+};
+
+const block_colors = {
+    1: hex_color("#ffffff"),
+    2: hex_color("#ff0000"),
+    3: hex_color("#0000ff"),
+};
+
+export {Block, block_materials, block_colors};
