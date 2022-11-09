@@ -1,5 +1,6 @@
 import {defs, tiny} from './examples/common.js';
 import {Block, block_materials, block_colors} from './block.js';
+import {tetrominoes} from './tetromino.js';
 //import {Block_shader} from "./block_shader";
 
 const {
@@ -11,7 +12,7 @@ const MAX_LEVEL = 8;
 const MAX_ROW = 6;
 const MAX_COL = 6;
 
-export class Beyond_tetris extends Scene {
+export class Beyond_Tetris extends Scene {
     constructor() {
         super();
 
@@ -19,7 +20,8 @@ export class Beyond_tetris extends Scene {
         this.initialize_map();
 
         //Record the current active piece as array of 4 blocks position [[x, y, z], [], [], []]
-        this.current = null;
+        this.current = 1;
+        this.current_pos = vec3(MAX_ROW / 2, MAX_LEVEL, MAX_COL / 2);
 
         this.shapes = {
             'block': new Block(),
@@ -43,6 +45,13 @@ export class Beyond_tetris extends Scene {
             }
             this.block_map[level] = each_l;
         }
+
+        //For testing
+        this.block_map[0][0][0] = 1;
+        this.block_map[0][2][0] = 3;
+        this.block_map[0][0][3] = 3;
+        this.block_map[1][0][0] = 2;
+        this.block_map[0][MAX_ROW - 1][MAX_COL - 1] = 4;
     }
 
 
@@ -80,15 +89,10 @@ export class Beyond_tetris extends Scene {
         //this.shapes.block.draw(context, program_state, model_transform, this.materials.plastic);
 
         //For testing
-        model_transform = model_transform.times(Mat4.translation(-6, 0, -6));
+        const init_transform = model_transform.times(Mat4.translation(-6, 0, -6));
+        model_transform = init_transform;
 
         //Display all blocks in the block_map
-
-        //For testing
-        this.block_map[0][0][0] = 1;
-        this.block_map[0][2][0] = 3;
-        this.block_map[0][0][3] = 3;
-        this.block_map[1][0][0] = 2;
         //this.shapes.block.draw(context, program_state, model_transform, this.materials.plastic.override({color: block_colors[1]}));
         for (let level = 0; level < MAX_LEVEL; level++) {
             for (let row = 0; row < MAX_ROW; row++) {
@@ -99,11 +103,12 @@ export class Beyond_tetris extends Scene {
                     }
                     model_transform = model_transform.times(Mat4.translation(2, 0, 0));
                 }
-                model_transform = model_transform.times(Mat4.translation(-12, 0, 2));
+                model_transform = model_transform.times(Mat4.translation(-2 * MAX_COL, 0, 2));
             }
-            model_transform = model_transform.times(Mat4.translation(0, 2, -12));
+            model_transform = model_transform.times(Mat4.translation(0, 2, -2 * MAX_ROW));
         }
 
+        tetrominoes[Math.floor(t / 1000) % 8 + 1].display(this.current_pos, this, context, program_state, init_transform);
 
     }
 }

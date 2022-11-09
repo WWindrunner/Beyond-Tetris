@@ -28,9 +28,14 @@ const block_materials = {
 };
 
 const block_colors = {
-    1: hex_color("#ffffff"),
-    2: hex_color("#ff0000"),
-    3: hex_color("#0000ff"),
+    1: hex_color("#00c4c7"),
+    2: hex_color("#ff8e24"),
+    3: hex_color("#fc1414"),
+    4: hex_color("#f0ff24"),
+    5: hex_color("#ff2495"),
+    6: hex_color("#3624ff"),
+    7: hex_color("#24ff57"),
+    8: hex_color("#bd24ff"),
 };
 
 export {Block, block_materials, block_colors};
