@@ -55,6 +55,7 @@ export class Beyond_Tetris extends Scene {
 
         this.direction = null;
 
+        // generate a look at matrix with input eye position, center of interest, and up vector
         this.initial_camera_location = Mat4.look_at(vec3(10, 25, 15), vec3(0, 8, 0), vec3(0, 1, 0));
     }
 
@@ -75,20 +76,21 @@ export class Beyond_Tetris extends Scene {
         }
 
         //For testing
-        this.block_map[0][0][0] = 1;
-        this.block_map[0][2][0] = 3;
-        this.block_map[0][3][3] = 3;
-        this.block_map[1][3][3] = 3;
+        // this.block_map[0][0][0] = 1;
+        // this.block_map[0][2][0] = 3;
+        // this.block_map[0][3][3] = 3;
+        // this.block_map[1][3][3] = 3;
         // this.block_map[2][3][3] = 3;
         // this.block_map[3][3][3] = 3;
-        this.block_map[0][3][4] = 2;
-        this.block_map[1][3][4] = 2;
-        this.block_map[2][3][4] = 2;
-        this.block_map[3][3][4] = 2;
-        this.block_map[0][MAX_ROW - 1][MAX_COL - 1] = 4;
+        // this.block_map[0][3][4] = 2;
+        // this.block_map[1][3][4] = 2;
+        // this.block_map[2][3][4] = 2;
+        // this.block_map[3][3][4] = 2;
+        // this.block_map[0][MAX_ROW - 1][MAX_COL - 1] = 4;
         
         // the highest point in current block map
-        this.highest = 3;
+        this.highest = 0;
+        this.gameOver = false;
     }
 
 
@@ -109,9 +111,7 @@ export class Beyond_Tetris extends Scene {
         this.key_triggered_button("Move backward", ["Control", "w"], () => {this.direction = "backward"});
         this.key_triggered_button("Move Left", ["Control", "a"], () => {this.direction = "left"});
         this.key_triggered_button("Move right", ["Control", "d"], () => {this.direction = "right"});
-        // this.key_triggered_button("Attach to planet 4", ["Control", "4"], () => this.attached = () => this.planet_4);
-        // this.new_line();
-        // this.key_triggered_button("Attach to moon", ["Control", "m"], () => this.attached = () => this.moon);
+        this.key_triggered_button("Reset", ["Control", "r"], () => {this.initialize_map()});
     }
 
     detect_collision() {
@@ -125,13 +125,15 @@ export class Beyond_Tetris extends Scene {
                 let curr_row = this.current_pos[2] + block[2];
                 // have to add 0.9 so that the function only return true when two blocks are 0.1 distance apart
                 // can't think a better solution right not that can return true when the two blocks are entirely stick together
-                // subject to improvement later
+                // Can be improved later
                 let curr_depth = Math.floor(this.current_pos[1]+0.9) + block[1];
                 let curr_col = this.current_pos[0] + block[0];
+                // if there's a block in block map right below this current block, return true
                 if(this.block_map[curr_depth-1][curr_row][curr_col] != 0) {
-                    // if (curr_depth-1 >= 8) {
-                    //     // call game over function
-                    // }
+                    if (curr_depth >= 7) {
+                        // call game over function
+                        this.gameOver = true;
+                    }
                     return true;
                 }
             }
@@ -140,6 +142,9 @@ export class Beyond_Tetris extends Scene {
     }
 
     display(context, program_state) {
+        if (this.gameOver) {
+            return
+        }
         if (!context.scratchpad.controls) {
             this.children.push(context.scratchpad.controls = new defs.Movement_Controls());
             // Define the global camera and projection matrices, which are stored in program_state.
@@ -182,14 +187,17 @@ export class Beyond_Tetris extends Scene {
         }
 
 
-        //console.log(this.current_pos)
+        // reset when block collide or hit the bottom
         if (this.detect_collision() || this.current_pos[1] - tetrominoes[this.current].depth <= 0) {
             // place the tetromino into block map
             for (let blockIndex = 0; blockIndex < 4; blockIndex ++) {
-                // traverse through all the levels in the block map
                 let block = tetrominoes[this.current].blocks[blockIndex];
                 let curr_row = this.current_pos[2] + block[2];
                 let curr_depth = 0;
+                // if the the reset is triggered by hitting the bottom, it's vertical depth would be smaller than
+                // zero at this point, which make calling math.floor return -1. Then the tetromino would be placed 
+                // wrongly in the block map. Therefore i differentiate the two conditions here. 
+                // Can be improved later.
                 if (this.current_pos[1] - tetrominoes[this.current].depth <= 0 ) {
                     curr_depth = Math.ceil(this.current_pos[1]) + block[1];
                 }
@@ -197,7 +205,7 @@ export class Beyond_Tetris extends Scene {
                     curr_depth = Math.floor(this.current_pos[1]) + block[1];
                 }
                 let curr_col = this.current_pos[0] + block[0];
-                console.log(curr_depth)
+                // place the blocks in block map 
                 this.block_map[curr_depth >= 0 ? curr_depth : 0][curr_row][curr_col] = this.current;
                 if (curr_depth > this.highest) {
                     this.highest = curr_depth;
@@ -207,11 +215,12 @@ export class Beyond_Tetris extends Scene {
             this.current = Math.floor(Math.random() * (8 - 1 + 1) + 1);
             this.current_pos = vec3(MAX_ROW / 2, MAX_LEVEL, MAX_COL / 2);
         }
+        // change the position of current tetromino by calling it's fall method
         this.current_pos = tetrominoes[this.current].fall(this.current_pos);
         if (this.direction != null) {
+            // move the tetromino according to the keyboard input
             this.current_pos = tetrominoes[this.current].move(this.current_pos, this.direction);
             this.direction = null;
-            let block = tetrominoes[this.current].blocks[2];
         }
         
         tetrominoes[this.current].display(this.current_pos, this, context, program_state, init_transform);
