@@ -24,8 +24,37 @@ class Tetromino {
         });
     }
 
-    rotate() {
+    rotate(game_state, context, program_state, model_transform, direction) {
+        // rotate the tetromino 90 degree by the desired axis (x, y, z)
 
+        return model_transform;
+    }
+
+    move(pos, direction) {
+        // translate the tetromino one block distance to the desired direction 
+        // (up, down, left, right) horizontally
+        if(direction === "left") {
+            pos.add_by(vec3(-1, 0, 0))
+        }
+        else if(direction === "right") {
+            pos.add_by(vec3(1, 0, 0))
+        }
+        else if(direction === "forward") {
+            pos.add_by(vec3(0, 0, 1))
+        }
+        else if(direction === "backward") {
+            pos.add_by(vec3(0, 0, -1))
+        }
+        return pos;
+    }
+
+    fall(pos) {
+        // fall() is called every frame to move the block downward vertically
+        if (pos[1] <= 1) {
+            pos = vec3(3, 8, 3)
+        }
+        pos.add_by(vec3(0, -0.05, 0))
+        return pos;
     }
 }
 

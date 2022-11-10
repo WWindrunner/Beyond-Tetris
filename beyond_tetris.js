@@ -28,6 +28,8 @@ export class Beyond_Tetris extends Scene {
         };
 
         this.materials = block_materials;
+
+        this.direction = null;
     }
 
 
@@ -67,6 +69,14 @@ export class Beyond_Tetris extends Scene {
         this.key_triggered_button("Sit still", ["m"], () => {
 
         });
+        this.new_line();
+        this.key_triggered_button("Move forward", ["Control", "w"], () => {this.direction = "forward"});
+        this.key_triggered_button("Move backward", ["Control", "s"], () => {this.direction = "backward"});
+        this.key_triggered_button("Move Left", ["Control", "a"], () => {this.direction = "left"});
+        this.key_triggered_button("Move right", ["Control", "d"], () => {this.direction = "right"});
+        // this.key_triggered_button("Attach to planet 4", ["Control", "4"], () => this.attached = () => this.planet_4);
+        // this.new_line();
+        // this.key_triggered_button("Attach to moon", ["Control", "m"], () => this.attached = () => this.moon);
     }
 
     display(context, program_state) {
@@ -108,7 +118,17 @@ export class Beyond_Tetris extends Scene {
             model_transform = model_transform.times(Mat4.translation(0, 2, -2 * MAX_ROW));
         }
 
-        tetrominoes[Math.floor(t / 1000) % 8 + 1].display(this.current_pos, this, context, program_state, init_transform);
 
+        //console.log(this.current_pos)
+        if (this.current_pos[1] <= 1) {
+            this.current = Math.floor(Math.random() * (8 - 1 + 1) + 1);
+        }
+        this.current_pos = tetrominoes[this.current].fall(this.current_pos);
+        if (this.direction != null) {
+            this.current_pos = tetrominoes[this.current].move(this.current_pos, this.direction);
+            this.direction = null;
+        }
+        
+        tetrominoes[this.current].display(this.current_pos, this, context, program_state, init_transform);
     }
 }
