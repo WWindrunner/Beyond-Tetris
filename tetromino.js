@@ -25,38 +25,37 @@ class Tetromino {
     }
 
     initialized_boundary() {
-        if (this.id == 1) {
-            this.distanceFromCenter = vec4(0, 0, 0, 0);
-            this.depth = 3;
-        }
-        else if (this.id == 2) {
-            this.distanceFromCenter = vec4(0, 1, 0, 0);
-            this.depth = 2;
-        }
-        else if (this.id == 3) {
-            this.distanceFromCenter = vec4(0, 2, 0, 0);
-            this.depth = 1;
-        }
-        else if (this.id == 4) {
-            this.distanceFromCenter = vec4(1, 0, 0, 0);
-            this.depth = 1;
-        }
-        else if (this.id == 5) {
-            this.distanceFromCenter = vec4(0, 1, 1, 0);
-            this.depth = 1;
-        }
-        else if (this.id == 6) {
-            this.distanceFromCenter = vec4(0, 1, 0, 1);
-            this.depth = 1;
-        }
-        else if (this.id == 7) {
-            this.distanceFromCenter = vec4(0, 1, 1, 0);
-            this.depth = 1;
-        }
-        else if (this.id == 8) {
-            this.distanceFromCenter = vec4(1, 1, 0, 0);
-            this.depth = 1;
-        }
+        this.depth = 1;
+        switch(this.id) {
+            case 1:
+                this.distanceFromCenter = vec4(0, 0, 0, 0);
+                this.depth = 3;
+              break;
+            case 2:
+                this.distanceFromCenter = vec4(0, 1, 0, 0);
+                this.depth = 2;
+              break; 
+            case 3:
+                this.distanceFromCenter = vec4(0, 2, 0, 0);
+                break;     
+            case 4:
+                this.distanceFromCenter = vec4(0, 1, 0, 0);
+              break;
+            case 5:
+                this.distanceFromCenter = vec4(0, 1, 1, 0);
+                break;  
+            case 6:
+                this.distanceFromCenter = vec4(0, 1, 0, 1);
+                break;  
+            case 7:
+                this.distanceFromCenter = vec4(0, 1, 1, 0);
+                break; 
+            case 8:
+                this.distanceFromCenter = vec4(1, 1, 0, 0);
+                break;            
+            default:
+              // code block
+          }
     }
 
     display(pos, game_state, context, program_state, model_transform) {

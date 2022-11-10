@@ -77,9 +77,18 @@ export class Beyond_Tetris extends Scene {
         //For testing
         this.block_map[0][0][0] = 1;
         this.block_map[0][2][0] = 3;
-        this.block_map[0][0][3] = 3;
-        this.block_map[1][0][0] = 2;
+        this.block_map[0][3][3] = 3;
+        this.block_map[1][3][3] = 3;
+        // this.block_map[2][3][3] = 3;
+        // this.block_map[3][3][3] = 3;
+        this.block_map[0][3][4] = 2;
+        this.block_map[1][3][4] = 2;
+        this.block_map[2][3][4] = 2;
+        this.block_map[3][3][4] = 2;
         this.block_map[0][MAX_ROW - 1][MAX_COL - 1] = 4;
+        
+        // the highest point in current block map
+        this.highest = 3;
     }
 
 
@@ -96,13 +105,36 @@ export class Beyond_Tetris extends Scene {
 
         });
         this.new_line();
-        this.key_triggered_button("Move forward", ["Control", "w"], () => {this.direction = "forward"});
-        this.key_triggered_button("Move backward", ["Control", "s"], () => {this.direction = "backward"});
+        this.key_triggered_button("Move forward", ["Control", "s"], () => {this.direction = "forward"});
+        this.key_triggered_button("Move backward", ["Control", "w"], () => {this.direction = "backward"});
         this.key_triggered_button("Move Left", ["Control", "a"], () => {this.direction = "left"});
         this.key_triggered_button("Move right", ["Control", "d"], () => {this.direction = "right"});
         // this.key_triggered_button("Attach to planet 4", ["Control", "4"], () => this.attached = () => this.planet_4);
         // this.new_line();
         // this.key_triggered_button("Attach to moon", ["Control", "m"], () => this.attached = () => this.moon);
+    }
+
+    detect_collision() {
+        let lowest = Math.floor(this.current_pos[1]) - tetrominoes[this.current].depth;
+        //console.log(lowest)
+        if (lowest <= this.highest+1 && lowest > 0) {
+            // traverse through all the blocks in the current tetromino
+            for (let blockIndex = 0; blockIndex < 4; blockIndex ++) {
+                // traverse through all the levels in the block map
+                let block = tetrominoes[this.current].blocks[blockIndex];
+                let curr_row = this.current_pos[0] + block[2];
+
+                // have to add 0.9 so that the function only return true when two blocks are 0.1 distance apart
+                // can't think a better solution right not that can return true when the two blocks are entirely stick together
+                // subject to improvement later
+                let curr_depth = Math.floor(this.current_pos[1]+0.9) + block[1];
+                let curr_col = this.current_pos[2] + block[0];
+                if(this.block_map[curr_depth-1][curr_row][curr_col] != 0) {
+                    return true;
+                }
+            }
+        }
+        return false;
     }
 
     display(context, program_state) {
@@ -149,7 +181,7 @@ export class Beyond_Tetris extends Scene {
 
 
         //console.log(this.current_pos)
-        if (this.current_pos[1] <= tetrominoes[this.current].depth) {
+        if (this.detect_collision() || this.current_pos[1] - tetrominoes[this.current].depth < 0) {
             this.current = Math.floor(Math.random() * (8 - 1 + 1) + 1);
             this.current_pos = vec3(MAX_ROW / 2, MAX_LEVEL, MAX_COL / 2);
         }
