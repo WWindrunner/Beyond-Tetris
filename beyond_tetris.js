@@ -204,7 +204,7 @@ export class Beyond_Tetris extends Scene {
                 }
             }
 
-            this.current = 7 ; // Math.floor(Math.random() * (8 - 1 + 1) + 1);
+            this.current = Math.floor(Math.random() * (8 - 1 + 1) + 1);
             this.current_pos = vec3(MAX_ROW / 2, MAX_LEVEL, MAX_COL / 2);
         }
         this.current_pos = tetrominoes[this.current].fall(this.current_pos);
