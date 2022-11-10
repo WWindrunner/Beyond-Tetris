@@ -1,8 +1,9 @@
 import {defs, tiny} from './examples/common.js';
+import {Block, block_materials, block_colors} from './block.js';
+
 const {
     Vector, Vector3, vec, vec3, vec4, color, hex_color, Shader, Matrix, Mat4, Light, Shape, Material, Scene,
 } = tiny;
-import {Block, block_materials, block_colors} from './block.js';
 
 class Tetromino {
     constructor(id, blocks, center) {
@@ -21,7 +22,7 @@ class Tetromino {
         // initialize the distance variables of the tetromino
         this.initialized_boundary();
 
-        //both of the above variables are updated during rotation
+        // both of the above variables are updated during rotation
     }
 
     initialized_boundary() {
@@ -71,15 +72,15 @@ class Tetromino {
         });
     }
 
+    // rotate the tetromino 90 degree by the desired axis (x, y, z)
     rotate(game_state, context, program_state, model_transform, direction) {
-        // rotate the tetromino 90 degree by the desired axis (x, y, z)
 
         return model_transform;
     }
 
+    // translate the tetromino one block distance to the desired direction
+    // (up, down, left, right) horizontally
     move(pos, direction) {
-        // translate the tetromino one block distance to the desired direction 
-        // (up, down, left, right) horizontally
         if(direction === "left") {
             if (pos[0] >= 1+this.distanceFromCenter[0]) {
                 pos.add_by(vec3(-1, 0, 0));
@@ -103,9 +104,9 @@ class Tetromino {
         return pos;
     }
 
+    // fall() is called every frame to move the block downward vertically
     fall(pos) {
-        // fall() is called every frame to move the block downward vertically
-        pos.add_by(vec3(0, -0.02, 0))
+        pos.add_by(vec3(0, -0.012, 0))
         return pos;
     }
 }
