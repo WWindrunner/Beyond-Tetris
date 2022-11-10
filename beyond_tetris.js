@@ -122,14 +122,16 @@ export class Beyond_Tetris extends Scene {
             for (let blockIndex = 0; blockIndex < 4; blockIndex ++) {
                 // traverse through all the levels in the block map
                 let block = tetrominoes[this.current].blocks[blockIndex];
-                let curr_row = this.current_pos[0] + block[2];
-
+                let curr_row = this.current_pos[2] + block[2];
                 // have to add 0.9 so that the function only return true when two blocks are 0.1 distance apart
                 // can't think a better solution right not that can return true when the two blocks are entirely stick together
                 // subject to improvement later
                 let curr_depth = Math.floor(this.current_pos[1]+0.9) + block[1];
-                let curr_col = this.current_pos[2] + block[0];
+                let curr_col = this.current_pos[0] + block[0];
                 if(this.block_map[curr_depth-1][curr_row][curr_col] != 0) {
+                    // if (curr_depth-1 >= 8) {
+                    //     // call game over function
+                    // }
                     return true;
                 }
             }
@@ -181,14 +183,35 @@ export class Beyond_Tetris extends Scene {
 
 
         //console.log(this.current_pos)
-        if (this.detect_collision() || this.current_pos[1] - tetrominoes[this.current].depth < 0) {
-            this.current = Math.floor(Math.random() * (8 - 1 + 1) + 1);
+        if (this.detect_collision() || this.current_pos[1] - tetrominoes[this.current].depth <= 0) {
+            // place the tetromino into block map
+            for (let blockIndex = 0; blockIndex < 4; blockIndex ++) {
+                // traverse through all the levels in the block map
+                let block = tetrominoes[this.current].blocks[blockIndex];
+                let curr_row = this.current_pos[2] + block[2];
+                let curr_depth = 0;
+                if (this.current_pos[1] - tetrominoes[this.current].depth <= 0 ) {
+                    curr_depth = Math.ceil(this.current_pos[1]) + block[1];
+                }
+                else {
+                    curr_depth = Math.floor(this.current_pos[1]) + block[1];
+                }
+                let curr_col = this.current_pos[0] + block[0];
+                console.log(curr_depth)
+                this.block_map[curr_depth >= 0 ? curr_depth : 0][curr_row][curr_col] = this.current;
+                if (curr_depth > this.highest) {
+                    this.highest = curr_depth;
+                }
+            }
+
+            this.current = 7 ; // Math.floor(Math.random() * (8 - 1 + 1) + 1);
             this.current_pos = vec3(MAX_ROW / 2, MAX_LEVEL, MAX_COL / 2);
         }
         this.current_pos = tetrominoes[this.current].fall(this.current_pos);
         if (this.direction != null) {
             this.current_pos = tetrominoes[this.current].move(this.current_pos, this.direction);
             this.direction = null;
+            let block = tetrominoes[this.current].blocks[2];
         }
         
         tetrominoes[this.current].display(this.current_pos, this, context, program_state, init_transform);

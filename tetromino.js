@@ -105,7 +105,7 @@ class Tetromino {
 
     fall(pos) {
         // fall() is called every frame to move the block downward vertically
-        pos.add_by(vec3(0, -0.04, 0))
+        pos.add_by(vec3(0, -0.02, 0))
         return pos;
     }
 }
