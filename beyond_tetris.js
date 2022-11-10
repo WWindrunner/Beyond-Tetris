@@ -12,6 +12,28 @@ const MAX_LEVEL = 8;
 const MAX_ROW = 6;
 const MAX_COL = 6;
 
+class Cube_Outline extends Shape {
+    constructor() {
+        super("position", "color");
+        //  TODO (Requirement 5).
+        // When a set of lines is used in graphics, you should think of the list entries as
+        // broken down into pairs; each pair of vertices will be drawn as a line segment.
+        // Note: since the outline is rendered with Basic_shader, you need to redefine the position and color of each vertex
+        this.arrays.position = Vector3.cast(
+            [1, 1, 1], [1, -1, 1], [-1, 1, 1], [-1, -1, 1], [1, 1, -1], [1, -1, -1], [-1, 1, -1], [-1, -1, -1],
+            [1, 1, 1], [1, 1, -1], [1, -1, 1], [1, -1, -1], [-1, 1, 1], [-1, 1, -1], [-1, -1, 1], [-1, -1, -1],
+            [1, 1, 1], [-1, 1, 1], [1, -1, 1], [-1, -1, 1], [1, 1, -1], [-1, 1, -1], [1, -1, -1], [-1, -1, -1]);
+        this.arrays.color = Vector3.cast(
+            hex_color("#ffffff"), hex_color("#ffffff"), hex_color("#ffffff"), hex_color("#ffffff"),
+            hex_color("#ffffff"), hex_color("#ffffff"), hex_color("#ffffff"), hex_color("#ffffff"),
+            hex_color("#ffffff"), hex_color("#ffffff"), hex_color("#ffffff"), hex_color("#ffffff"),
+            hex_color("#ffffff"), hex_color("#ffffff"), hex_color("#ffffff"), hex_color("#ffffff"),
+            hex_color("#ffffff"), hex_color("#ffffff"), hex_color("#ffffff"), hex_color("#ffffff"),
+            hex_color("#ffffff"), hex_color("#ffffff"), hex_color("#ffffff"), hex_color("#ffffff"));
+        this.indices = false;
+    }
+}
+
 export class Beyond_Tetris extends Scene {
     constructor() {
         super();
@@ -25,11 +47,15 @@ export class Beyond_Tetris extends Scene {
 
         this.shapes = {
             'block': new Block(),
+            'outline': new Cube_Outline(),
         };
 
         this.materials = block_materials;
+        this.white = new Material(new defs.Basic_Shader());
 
         this.direction = null;
+
+        this.initial_camera_location = Mat4.look_at(vec3(10, 25, 15), vec3(0, 8, 0), vec3(0, 1, 0));
     }
 
 
@@ -83,7 +109,7 @@ export class Beyond_Tetris extends Scene {
         if (!context.scratchpad.controls) {
             this.children.push(context.scratchpad.controls = new defs.Movement_Controls());
             // Define the global camera and projection matrices, which are stored in program_state.
-            program_state.set_camera(Mat4.translation(5, -10, -30));
+            program_state.set_camera(this.initial_camera_location);
         }
         program_state.projection_transform = Mat4.perspective(
             Math.PI / 4, context.width / context.height, 1, 100);
@@ -92,7 +118,10 @@ export class Beyond_Tetris extends Scene {
         const light_position = vec4(0, 5, 5, 1);
         program_state.lights = [new Light(light_position, color(1, 1, 1, 1), 1000)];
 
-
+        // draw the outline
+        let model_transform_outline = Mat4.identity();
+        model_transform_outline = model_transform_outline.times(Mat4.translation(-1, 7, -1)).times(Mat4.scale(MAX_ROW, MAX_LEVEL, MAX_COL));
+        this.shapes.outline.draw(context, program_state, model_transform_outline, this.white, "LINES")
 
         let model_transform = Mat4.identity();
         const t = this.t = program_state.animation_time;
@@ -120,8 +149,9 @@ export class Beyond_Tetris extends Scene {
 
 
         //console.log(this.current_pos)
-        if (this.current_pos[1] <= 1) {
+        if (this.current_pos[1] <= tetrominoes[this.current].depth) {
             this.current = Math.floor(Math.random() * (8 - 1 + 1) + 1);
+            this.current_pos = vec3(MAX_ROW / 2, MAX_LEVEL, MAX_COL / 2);
         }
         this.current_pos = tetrominoes[this.current].fall(this.current_pos);
         if (this.direction != null) {

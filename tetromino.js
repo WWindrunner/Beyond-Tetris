@@ -9,6 +9,54 @@ class Tetromino {
         this.id = id;
         this.blocks = blocks;
         this.center = center;
+
+        // a vecor that record a tetromino's boundary distance from it's center
+        // from the first entry to the fourth: leftDisFromCenter, rightDisFromCenter,
+        // frontDisFromCenter, backDisFromCenter. This vector is initialized later.
+        this.distanceFromCenter = vec4(0, 0, 0, 0);
+
+        // a variable that record a tetromino's depth distance from it's center
+        this.depth = 0;
+
+        // initialize the distance variables of the tetromino
+        this.initialized_boundary();
+
+        //both of the above variables are updated during rotation
+    }
+
+    initialized_boundary() {
+        if (this.id == 1) {
+            this.distanceFromCenter = vec4(0, 0, 0, 0);
+            this.depth = 3;
+        }
+        else if (this.id == 2) {
+            this.distanceFromCenter = vec4(0, 1, 0, 0);
+            this.depth = 2;
+        }
+        else if (this.id == 3) {
+            this.distanceFromCenter = vec4(0, 2, 0, 0);
+            this.depth = 1;
+        }
+        else if (this.id == 4) {
+            this.distanceFromCenter = vec4(1, 0, 0, 0);
+            this.depth = 1;
+        }
+        else if (this.id == 5) {
+            this.distanceFromCenter = vec4(0, 1, 1, 0);
+            this.depth = 1;
+        }
+        else if (this.id == 6) {
+            this.distanceFromCenter = vec4(0, 1, 0, 1);
+            this.depth = 1;
+        }
+        else if (this.id == 7) {
+            this.distanceFromCenter = vec4(0, 1, 1, 0);
+            this.depth = 1;
+        }
+        else if (this.id == 8) {
+            this.distanceFromCenter = vec4(1, 1, 0, 0);
+            this.depth = 1;
+        }
     }
 
     display(pos, game_state, context, program_state, model_transform) {
@@ -34,26 +82,31 @@ class Tetromino {
         // translate the tetromino one block distance to the desired direction 
         // (up, down, left, right) horizontally
         if(direction === "left") {
-            pos.add_by(vec3(-1, 0, 0))
+            if (pos[0] >= 1+this.distanceFromCenter[0]) {
+                pos.add_by(vec3(-1, 0, 0));
+            }
         }
         else if(direction === "right") {
-            pos.add_by(vec3(1, 0, 0))
+            if (pos[0] <= 4-this.distanceFromCenter[1]) {
+                pos.add_by(vec3(1, 0, 0));
+            }
         }
         else if(direction === "forward") {
-            pos.add_by(vec3(0, 0, 1))
+            if (pos[2] <= 4-this.distanceFromCenter[2]) {
+                pos.add_by(vec3(0, 0, 1));
+            }
         }
         else if(direction === "backward") {
-            pos.add_by(vec3(0, 0, -1))
+            if (pos[2] >= 1+this.distanceFromCenter[3]) {
+                pos.add_by(vec3(0, 0, -1));
+            }
         }
         return pos;
     }
 
     fall(pos) {
         // fall() is called every frame to move the block downward vertically
-        if (pos[1] <= 1) {
-            pos = vec3(3, 8, 3)
-        }
-        pos.add_by(vec3(0, -0.05, 0))
+        pos.add_by(vec3(0, -0.04, 0))
         return pos;
     }
 }
