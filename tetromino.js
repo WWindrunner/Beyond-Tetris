@@ -6,12 +6,13 @@ const {
 } = tiny;
 
 class Tetromino {
-    constructor(id, blocks, center) {
+    constructor(id, blocks, center_of_rotation) {
         this.id = id;
         this.blocks = blocks;
-        this.center = center;
+        this.center_of_rotation = center_of_rotation; // center is used for rotation
+        this.position = vec3(0, 0, 0);
 
-        // a vecor that record a tetromino's boundary distance from it's center
+        // a vector that record a tetromino's boundary distance from it's center
         // from the first entry to the fourth: leftDisFromCenter, rightDisFromCenter,
         // frontDisFromCenter, backDisFromCenter. This vector is initialized later.
         this.distanceFromCenter = vec4(0, 0, 0, 0);
@@ -23,6 +24,12 @@ class Tetromino {
         this.initialized_boundary();
 
         // both of the above variables are updated during rotation
+    }
+
+    copy(position) {
+        let tetromino = new Tetromino(this.id, this.blocks, this.center_of_rotation);
+        tetromino.position = vec3(position[0], position[1], position[2]);
+        return tetromino;
     }
 
     initialized_boundary() {
@@ -59,12 +66,12 @@ class Tetromino {
           }
     }
 
-    display(pos, game_state, context, program_state, model_transform) {
+    display(game_state, context, program_state, model_transform) {
         this.blocks.forEach(block => {
             const block_model_transform = model_transform.times(Mat4.translation(
-                2 * (block[0] + pos[0]),
-                2 * (block[1] + pos[1]),
-                2 * (block[2] + pos[2])
+                2 * (block[0] + this.position[0]),
+                2 * (Math.ceil(block[1] + this.position[1])),
+                2 * (block[2] + this.position[2])
             ));
             game_state.shapes.block.draw(context, program_state, block_model_transform, 
                 game_state.materials.plastic.override({color: block_colors[this.id]})
@@ -80,34 +87,85 @@ class Tetromino {
 
     // translate the tetromino one block distance to the desired direction
     // (up, down, left, right) horizontally
-    move(pos, direction) {
-        if(direction === "left") {
-            if (pos[0] >= 1+this.distanceFromCenter[0]) {
-                pos.add_by(vec3(-1, 0, 0));
-            }
+    move(direction, game_state) {
+        if (this.check_bounds(game_state.num_rows, game_state.num_cols, direction) && 
+                this.check_collision(game_state, direction))
+            this.position.add_by(direction);
+        // return pos;
+    }
+
+    check_bounds(max_row, max_col, delta_pos) {
+        const x = this.position[0] + delta_pos[0];
+        const z = this.position[2] + delta_pos[2];
+        for (let i = 0; i < 4; i++) {
+            const block = this.blocks[i];
+            const bx = block[0] + x;
+            const bz = block[2] + z;
+            
+            if (bx < 0 || bz < 0 || bx >= max_row || bz >= max_col)
+                return false;
         }
-        else if(direction === "right") {
-            if (pos[0] <= 4-this.distanceFromCenter[1]) {
-                pos.add_by(vec3(1, 0, 0));
-            }
+        return true;
+    }
+
+    check_collision(game_state, delta_pos) {
+        const block_map = game_state.block_map;
+        const x = this.position[0] + delta_pos[0];
+        const y = Math.ceil(this.position[1]);
+        const z = this.position[2] + delta_pos[2];
+
+        for (let i = 0; i < 4; i++) {
+            const block = this.blocks[i];
+            const bx = block[0] + x;
+            const by = block[1] + y;
+            const bz = block[2] + z;
+
+            if (block_map[by][bz][bx] != 0)
+                return false;
         }
-        else if(direction === "forward") {
-            if (pos[2] <= 4-this.distanceFromCenter[2]) {
-                pos.add_by(vec3(0, 0, 1));
-            }
-        }
-        else if(direction === "backward") {
-            if (pos[2] >= 1+this.distanceFromCenter[3]) {
-                pos.add_by(vec3(0, 0, -1));
-            }
-        }
-        return pos;
+        return true;
     }
 
     // fall() is called every frame to move the block downward vertically
-    fall(pos) {
-        pos.add_by(vec3(0, -0.012, 0))
-        return pos;
+    fall(speed) {
+        this.position.add_by(vec3(0, -speed, 0))
+        return this.position;
+    }
+
+    // Detect collisions between tetrominoes
+    detect_collision(game_state, speed) {
+        const block_map = game_state.block_map;
+
+        for (let i = 0; i < 4; i++) {
+            const block = this.blocks[i];
+            const x = block[0] + this.position[0];
+            const y = Math.ceil(block[1] + this.position[1] - speed);
+            const z = block[2] + this.position[2];
+
+            // Tetromino hits the bottom of the stage
+            if (y < 0) {
+                // this.position[1] = Math.floor(this.position[1] + 1);
+                return true;
+            }
+
+            // if there's a block in block map right below this current block, return true
+            if (block_map[y][z][x] !== 0) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    place_blocks(game_state) {
+        for (let blockIndex = 0; blockIndex < 4; blockIndex ++) {
+            const block = this.blocks[blockIndex];
+            const curr_row = this.position[2] + block[2];
+            const curr_col = this.position[0] + block[0];
+            const curr_depth = Math.ceil(this.position[1] + block[1]);
+
+            // place the blocks in block map 
+            game_state.block_map[curr_depth][curr_row][curr_col] = this.id;
+        }
     }
 }
 
