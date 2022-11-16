@@ -9,61 +9,14 @@ class Tetromino {
     constructor(id, blocks, center_of_rotation) {
         this.id = id;
         this.blocks = blocks;
-        this.center_of_rotation = center_of_rotation; // center is used for rotation
+        this.center_of_rotation = center_of_rotation;
         this.position = vec3(0, 0, 0);
-
-        // a vector that record a tetromino's boundary distance from it's center
-        // from the first entry to the fourth: leftDisFromCenter, rightDisFromCenter,
-        // frontDisFromCenter, backDisFromCenter. This vector is initialized later.
-        this.distanceFromCenter = vec4(0, 0, 0, 0);
-
-        // a variable that record a tetromino's depth distance from it's center
-        this.depth = 0;
-
-        // initialize the distance variables of the tetromino
-        this.initialized_boundary();
-
-        // both of the above variables are updated during rotation
     }
 
     copy(position) {
         let tetromino = new Tetromino(this.id, this.blocks, this.center_of_rotation);
         tetromino.position = vec3(position[0], position[1], position[2]);
         return tetromino;
-    }
-
-    initialized_boundary() {
-        this.depth = 1;
-        switch(this.id) {
-            case 1:
-                this.distanceFromCenter = vec4(0, 0, 0, 0);
-                this.depth = 3;
-              break;
-            case 2:
-                this.distanceFromCenter = vec4(0, 1, 0, 0);
-                this.depth = 2;
-              break; 
-            case 3:
-                this.distanceFromCenter = vec4(0, 2, 0, 0);
-                break;     
-            case 4:
-                this.distanceFromCenter = vec4(0, 1, 0, 0);
-              break;
-            case 5:
-                this.distanceFromCenter = vec4(0, 1, 1, 0);
-                break;  
-            case 6:
-                this.distanceFromCenter = vec4(0, 1, 0, 1);
-                break;  
-            case 7:
-                this.distanceFromCenter = vec4(0, 1, 1, 0);
-                break; 
-            case 8:
-                this.distanceFromCenter = vec4(1, 1, 0, 0);
-                break;            
-            default:
-              // code block
-          }
     }
 
     display(game_state, context, program_state, model_transform) {
@@ -80,9 +33,7 @@ class Tetromino {
     }
 
     // rotate the tetromino 90 degree by the desired axis (x, y, z)
-    rotate(game_state, context, program_state, model_transform, direction) {
-
-        return model_transform;
+    rotate(game_state, axis) {
     }
 
     // translate the tetromino one block distance to the desired direction
