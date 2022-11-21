@@ -28,6 +28,7 @@ export class Beyond_Tetris extends Scene {
         // Record the current active piece as array of 4 blocks position [[x, y, z], [], [], []]
         this.current = tetrominoes[1].copy(TETROMINO_SPAWN_POS);
         this.speed = 0.012;
+        this.speed_mult = 1.0;
 
         this.shapes = {
             'block': new Block(),
@@ -79,10 +80,12 @@ export class Beyond_Tetris extends Scene {
     make_control_panel() {
         // this.key_triggered_button("restart", ["c"], () => {});
         this.new_line();
-        this.key_triggered_button("Move forward", ["s"], () => {this.direction = vec3(0, 0, 1)});
-        this.key_triggered_button("Move backward", ["w"], () => {this.direction = vec3(0, 0, -1)});
+        this.key_triggered_button("Move Forward", ["s"], () => {this.direction = vec3(0, 0, 1)});
+        this.key_triggered_button("Move Backward", ["w"], () => {this.direction = vec3(0, 0, -1)});
         this.key_triggered_button("Move Left", ["a"], () => {this.direction = vec3(-1, 0, 0)});
-        this.key_triggered_button("Move right", ["d"], () => {this.direction = vec3(1, 0, 0)});
+        this.key_triggered_button("Move Right", ["d"], () => {this.direction = vec3(1, 0, 0)});
+        this.key_triggered_button("Move Down", ["x"], () => {this.speed_mult = 25});
+        this.new_line();
         this.key_triggered_button("Rotate Z-axis", ["q"], () => this.rotation = vec3(0, 0, 1));
         this.key_triggered_button("Rotate X-axis", ["e"], () => this.rotation = vec3(1, 0, 0));
         this.key_triggered_button("Rotate Y-axis", ["r"], () => this.rotation = vec3(0, 1, 0));
@@ -138,9 +141,11 @@ export class Beyond_Tetris extends Scene {
             model_transform = model_transform.times(Mat4.translation(0, 2, -2 * MAX_ROW));
         }
 
+        const curr_speed = this.speed * this.speed_mult;
+        this.speed_mult = 1.0;
         
         // reset when block collide or hit the bottom
-        if (this.current && this.current.detect_collision(this, this.speed)) {
+        if (this.current && this.current.detect_collision(this, curr_speed)) {
             // place the tetromino into block map
             console.log("Placed blocks!");
             this.current.place_blocks(this);
@@ -157,7 +162,7 @@ export class Beyond_Tetris extends Scene {
 
         if (this.current !== null) {
             // change the position of current tetromino by calling its fall method
-            this.current.fall(this.speed);
+            this.current.fall(curr_speed);
             if (this.direction !== null) {
                 // move the tetromino according to the keyboard input
                 this.current.move(this.direction, this);
