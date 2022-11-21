@@ -34,44 +34,89 @@ class Tetromino {
 
     // rotate the tetromino 90 degree by the desired axis (x, y, z)
     rotate(game_state, axis) {
+        const recenter = Mat4.translation(
+            this.center_of_rotation[0],
+            this.center_of_rotation[1],
+            this.center_of_rotation[2]
+        );
+        const rotation = Mat4.rotation(Math.PI / 2.0, axis[0], axis[1], axis[2]);
+        const decenter = Mat4.inverse(recenter);
+
+        let new_blocks = Array(4);
+        for (let i = 0; i < 4; i++) {
+            const new_pos = recenter.times(rotation).times(decenter).times(         
+                vec4(this.blocks[i][0], this.blocks[i][1], this.blocks[i][2], 1)
+            );
+            // console.log(new_pos);
+            new_blocks[i] = vec3(Math.trunc(new_pos[0]), Math.trunc(new_pos[1]), Math.trunc(new_pos[2]));
+        }
+
+        const fixed_pos = this.fix_bounds(game_state.num_rows, game_state.num_cols, this.position, new_blocks);
+        if (this.check_collision(game_state, fixed_pos, new_blocks)) {
+            this.position = fixed_pos;
+            this.blocks = new_blocks;
+        }
     }
 
     // translate the tetromino one block distance to the desired direction
     // (up, down, left, right) horizontally
     move(direction, game_state) {
-        if (this.check_bounds(game_state.num_rows, game_state.num_cols, direction) && 
-                this.check_collision(game_state, direction))
-            this.position.add_by(direction);
-        // return pos;
+        const new_position = vec3(
+            this.position[0] + direction[0],
+            this.position[1] + direction[1],
+            this.position[2] + direction[2],
+        );
+        const fixed_pos = this.fix_bounds(game_state.num_rows, game_state.num_cols, new_position);
+        if (this.check_collision(game_state, fixed_pos))
+            this.position = fixed_pos;
     }
 
-    check_bounds(max_row, max_col, delta_pos) {
-        const x = this.position[0] + delta_pos[0];
-        const z = this.position[2] + delta_pos[2];
+    // Adjust blocks to not be out of bounds
+    fix_bounds(max_row, max_col, new_pos=this.position, new_blocks=this.blocks) {
+        const x = new_pos[0];
+        const z = new_pos[2];
+        let dx = 0;
+        let dz = 0;
+        
         for (let i = 0; i < 4; i++) {
-            const block = this.blocks[i];
+            const block = new_blocks[i];
             const bx = block[0] + x;
             const bz = block[2] + z;
             
-            if (bx < 0 || bz < 0 || bx >= max_row || bz >= max_col)
-                return false;
+            if (bx < 0 && -bx > dx)
+                dx = -bx;
+            if (bz < 0 && -bz > dz)
+                dz = -bz;
+            if (bx >= max_col && max_col - bx - 1 < dx)
+                dx = max_col - bx - 1;
+            if (bz >= max_row && max_row - bz - 1 < dz)
+                dz = max_row - bz - 1;
         }
-        return true;
+        
+        console.log(new_pos, dx, dz);
+
+        return vec3(
+            new_pos[0] + dx,
+            new_pos[1],
+            new_pos[2] + dz
+        );
     }
 
-    check_collision(game_state, delta_pos) {
+    // Move should not cause a collision with another tetromino
+    check_collision(game_state, new_pos=this.position, new_blocks=this.blocks) {
         const block_map = game_state.block_map;
-        const x = this.position[0] + delta_pos[0];
-        const y = Math.ceil(this.position[1]);
-        const z = this.position[2] + delta_pos[2];
+        const x = new_pos[0];
+        const y = Math.ceil(new_pos[1]);
+        const z = new_pos[2];
 
         for (let i = 0; i < 4; i++) {
-            const block = this.blocks[i];
+            const block = new_blocks[i];
             const bx = block[0] + x;
             const by = block[1] + y;
             const bz = block[2] + z;
 
-            if (block_map[by][bz][bx] != 0)
+            console.log(by, bz, bx);
+            if (by < game_state.num_levels && block_map[by][bz][bx] !== 0)
                 return false;
         }
         return true;
@@ -83,7 +128,7 @@ class Tetromino {
         return this.position;
     }
 
-    // Detect collisions between tetrominoes
+    // Detect collisions between tetrominoes and between floor
     detect_collision(game_state, speed) {
         const block_map = game_state.block_map;
 
@@ -100,7 +145,8 @@ class Tetromino {
             }
 
             // if there's a block in block map right below this current block, return true
-            if (block_map[y][z][x] !== 0) {
+            if (y < game_state.num_levels && block_map[y][z][x] !== 0) {
+                console.log(y, z, x, block_map[y][z][x])
                 return true;
             }
         }
@@ -121,12 +167,12 @@ class Tetromino {
 }
 
 const tetrominoes = {
-    1: new Tetromino(1, [vec3(0, 0, 0), vec3(0, -1, 0), vec3(0, -2, 0), vec3(0, -3, 0)], vec3(0, -1, 0)),
-    2: new Tetromino(2, [vec3(0, 0, 0), vec3(0, -1, 0), vec3(0, -2, 0), vec3(1, -2, 0)], vec3(0, -1, 0)),
-    3: new Tetromino(3, [vec3(0, 0, 0), vec3(1, 0, 0), vec3(1, -1, 0), vec3(2, -1, 0)], vec3(0, -1, 0)),
-    4: new Tetromino(4, [vec3(0, 0, 0), vec3(1, 0, 0), vec3(0, -1, 0), vec3(1, -1, 0)], vec3(0, -1, 0)),
-    5: new Tetromino(5, [vec3(0, 0, 0), vec3(1, 0, 0), vec3(1, -1, 0), vec3(1, -1, 1)], vec3(0, -1, 0)),
-    6: new Tetromino(6, [vec3(0, 0, 0), vec3(1, 0, 0), vec3(1, -1, 0), vec3(1, -1, -1)], vec3(0, -1, 0)),
+    1: new Tetromino(1, [vec3(0, 0, 0), vec3(-1, 0, 0), vec3(1, 0, 0), vec3(2, 0, 0)], vec3(1, 0, 0)),
+    2: new Tetromino(2, [vec3(0, 0, 0), vec3(-1, 0, 0), vec3(1, 0, 0), vec3(1, -1, 0)], vec3(1, 0, 0)),
+    3: new Tetromino(3, [vec3(0, 0, 0), vec3(-1, 0, 0), vec3(0, -1, 0), vec3(1, -1, 0)], vec3(0, -1, 0)),
+    4: new Tetromino(4, [vec3(0, 0, 0), vec3(1, 0, 0), vec3(0, -1, 0), vec3(1, -1, 0)], vec3(0, 0, 0)),
+    5: new Tetromino(5, [vec3(0, 0, 0), vec3(-1, 0, 0), vec3(0, -1, 0), vec3(0, -1, 1)], vec3(0, 0, 0)),
+    6: new Tetromino(6, [vec3(0, 0, 0), vec3(-1, 0, 0), vec3(0, -1, 0), vec3(0, -1, -1)], vec3(0, 0, 0)),
     7: new Tetromino(7, [vec3(0, 0, 0), vec3(0, -1, 0), vec3(1, -1, 0), vec3(0, -1, 1)], vec3(0, -1, 0)),
     8: new Tetromino(8, [vec3(0, 0, 0), vec3(0, -1, 0), vec3(-1, -1, 0), vec3(1, -1, 0)], vec3(0, -1, 0)),
 };

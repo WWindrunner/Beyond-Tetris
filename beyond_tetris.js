@@ -38,6 +38,7 @@ export class Beyond_Tetris extends Scene {
         this.white = new Material(new defs.Basic_Shader());
 
         this.direction = null;
+        this.rotation = null;
 
         // generate a look at matrix with input eye position, center of interest, and up vector
         this.initial_camera_location = Mat4.look_at(vec3(0, MAX_LEVEL, 30), vec3(0, MAX_LEVEL, 0), vec3(0, 1, 0));
@@ -76,12 +77,16 @@ export class Beyond_Tetris extends Scene {
 
     // Draw the scene's buttons, setup their actions and keyboard shortcuts, and monitor live measurements.
     make_control_panel() {
-        this.key_triggered_button("restart", ["c"], () => {});
+        // this.key_triggered_button("restart", ["c"], () => {});
         this.new_line();
         this.key_triggered_button("Move forward", ["s"], () => {this.direction = vec3(0, 0, 1)});
         this.key_triggered_button("Move backward", ["w"], () => {this.direction = vec3(0, 0, -1)});
         this.key_triggered_button("Move Left", ["a"], () => {this.direction = vec3(-1, 0, 0)});
         this.key_triggered_button("Move right", ["d"], () => {this.direction = vec3(1, 0, 0)});
+        this.key_triggered_button("Rotate Z-axis", ["q"], () => this.rotation = vec3(0, 0, 1));
+        this.key_triggered_button("Rotate X-axis", ["e"], () => this.rotation = vec3(1, 0, 0));
+        this.key_triggered_button("Rotate Y-axis", ["r"], () => this.rotation = vec3(0, 1, 0));
+        this.new_line();
         this.key_triggered_button("Reset", ["Control", "r"], () => {this.initialize_map()});
     }
 
@@ -137,24 +142,30 @@ export class Beyond_Tetris extends Scene {
         // reset when block collide or hit the bottom
         if (this.current && this.current.detect_collision(this, this.speed)) {
             // place the tetromino into block map
+            console.log("Placed blocks!");
             this.current.place_blocks(this);
             this.current = tetrominoes[Math.floor(Math.random() * (8 - 1 + 1) + 1)].copy(TETROMINO_SPAWN_POS);
             this.speed += 0.001;
             if (this.speed > 0.5)
                 this.speed = 0.5;
-            if (!this.current.check_collision(this, vec3(0, 0, 0))) {
+            if (!this.current.check_collision(this)) {
                 this.current = null;
                 this.gameOver = true;
+                console.log("Game Over!");
             }
         }
 
         if (this.current !== null) {
             // change the position of current tetromino by calling its fall method
             this.current.fall(this.speed);
-            if (this.direction != null) {
+            if (this.direction !== null) {
                 // move the tetromino according to the keyboard input
                 this.current.move(this.direction, this);
                 this.direction = null;
+            }
+            if (this.rotation !== null) {
+                this.current.rotate(this, this.rotation);
+                this.rotation = null;
             }
             
             this.current.display(this, context, program_state, init_transform);
