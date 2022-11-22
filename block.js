@@ -25,6 +25,9 @@ class Block extends Shape {
 const block_materials = {
     plastic: new Material(new defs.Phong_Shader(),
         {ambient: .4, diffusivity: .6, color: hex_color("#ffffff")}),
+    // Need a transparent shader to show where the block will fall
+    transparent: new Material(new defs.Phong_Shader(),
+        {ambient: .8, diffusivity: .8, color: hex_color("#ffffff")}),
 };
 
 const block_colors = {

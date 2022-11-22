@@ -13,6 +13,7 @@ const MAX_LEVEL = 10;
 const MAX_ROW = 6;
 const MAX_COL = 6;
 const TETROMINO_SPAWN_POS = vec3(MAX_ROW/2, MAX_LEVEL-1, MAX_COL/2);
+const NEXT_TETROMINO_POS = vec3(MAX_ROW*1.5, MAX_LEVEL/2, MAX_COL/2);
 
 // Main class for the game
 export class Beyond_Tetris extends Scene {
@@ -27,6 +28,8 @@ export class Beyond_Tetris extends Scene {
 
         // Record the current active piece as array of 4 blocks position [[x, y, z], [], [], []]
         this.current = tetrominoes[1].copy(TETROMINO_SPAWN_POS);
+        this.next_tetromino = tetrominoes[Math.floor(Math.random() * (8 - 1 + 1) + 1)].copy(NEXT_TETROMINO_POS);
+        this.tetromino_projection = null;
         this.speed = 0.012;
         this.speed_mult = 1.0;
 
@@ -73,7 +76,7 @@ export class Beyond_Tetris extends Scene {
         // this.block_map[2][3][4] = 2;
         // this.block_map[3][3][4] = 2;
         // this.block_map[0][MAX_ROW - 1][MAX_COL - 1] = 4;
-        this.gameOver = false;
+        this.game_over = false;
     }
 
     // Draw the scene's buttons, setup their actions and keyboard shortcuts, and monitor live measurements.
@@ -96,7 +99,7 @@ export class Beyond_Tetris extends Scene {
     // Main display function in Beyond_Tetris class.
     // Set up the camera, lighting, and draw everything
     display(context, program_state) {
-        // if (this.gameOver) {
+        // if (this.game_over) {
         //     return
         // }
 
@@ -149,13 +152,14 @@ export class Beyond_Tetris extends Scene {
             // place the tetromino into block map
             console.log("Placed blocks!");
             this.current.place_blocks(this);
-            this.current = tetrominoes[Math.floor(Math.random() * (8 - 1 + 1) + 1)].copy(TETROMINO_SPAWN_POS);
+            this.current = this.next_tetromino.copy(TETROMINO_SPAWN_POS);
+            this.next_tetromino = tetrominoes[Math.floor(Math.random() * (8 - 1 + 1) + 1)].copy(NEXT_TETROMINO_POS);
             this.speed += 0.001;
             if (this.speed > 0.5)
                 this.speed = 0.5;
             if (!this.current.check_collision(this)) {
                 this.current = null;
-                this.gameOver = true;
+                this.game_over = true;
                 console.log("Game Over!");
             }
         }
@@ -172,7 +176,12 @@ export class Beyond_Tetris extends Scene {
                 this.current.rotate(this, this.rotation);
                 this.rotation = null;
             }
-            
+
+            // Predict and show where the tetromino will fall
+            this.tetromino_projection = this.current.get_projection_tetromino(this);
+
+            this.tetromino_projection.display(this, context, program_state, init_transform);
+            this.next_tetromino.display(this, context, program_state, init_transform);
             this.current.display(this, context, program_state, init_transform);
         }
     }

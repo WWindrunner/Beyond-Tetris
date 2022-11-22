@@ -19,16 +19,25 @@ class Tetromino {
         return tetromino;
     }
 
-    display(game_state, context, program_state, model_transform) {
+    display(game_state, context, program_state, model_transform, is_projection=false) {
         this.blocks.forEach(block => {
             const block_model_transform = model_transform.times(Mat4.translation(
                 2 * (block[0] + this.position[0]),
                 2 * (Math.ceil(block[1] + this.position[1])),
                 2 * (block[2] + this.position[2])
             ));
-            game_state.shapes.block.draw(context, program_state, block_model_transform, 
-                game_state.materials.plastic.override({color: block_colors[this.id]})
-            );
+
+            if (is_projection) {
+                game_state.shapes.block.draw(context, program_state, block_model_transform,
+                    game_state.materials.transparent.override({color: block_colors[this.id]})
+                );
+            }
+            else {
+                game_state.shapes.block.draw(context, program_state, block_model_transform,
+                    game_state.materials.plastic.override({color: block_colors[this.id]})
+                );
+            }
+
         });
     }
 
@@ -146,11 +155,24 @@ class Tetromino {
 
             // if there's a block in block map right below this current block, return true
             if (y < game_state.num_levels && block_map[y][z][x] !== 0) {
-                console.log(y, z, x, block_map[y][z][x])
+                //console.log(y, z, x, block_map[y][z][x])
                 return true;
             }
         }
         return false;
+    }
+
+    get_projection_tetromino(game_state) {
+        const y = this.position[1];
+
+        while (!this.detect_collision(game_state, 0)) {
+            this.position[1] -= 1;
+        }
+        this.position[1] += 1;
+        let tetromino_projection = this.copy(this.position);
+        this.position[1] = y;
+
+        return tetromino_projection;
     }
 
     place_blocks(game_state) {
