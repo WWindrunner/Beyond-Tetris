@@ -1,4 +1,5 @@
 import {defs, tiny} from './examples/common.js';
+import {Transparent_shader} from "./block_shader.js";
 
 const {
     Vector, Vector3, vec, vec3, vec4, color, hex_color, Shader, Matrix, Mat4, Light, Shape, Material, Scene,
@@ -26,8 +27,8 @@ const block_materials = {
     plastic: new Material(new defs.Phong_Shader(),
         {ambient: .4, diffusivity: .6, color: hex_color("#ffffff")}),
     // Need a transparent shader to show where the block will fall
-    transparent: new Material(new defs.Phong_Shader(),
-        {ambient: .8, diffusivity: .8, color: hex_color("#ffffff")}),
+    transparent: new Material(new Transparent_shader(),
+        {ambient: .3, diffusivity: .3, color: hex_color("#ffffff")}),
 };
 
 const block_colors = {

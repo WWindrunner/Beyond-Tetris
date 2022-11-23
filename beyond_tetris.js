@@ -2,7 +2,6 @@ import {defs, tiny} from './examples/common.js';
 import {Block, block_materials, block_colors} from './block.js';
 import {tetrominoes} from './tetromino.js';
 import {Field_Outline} from "./field_outline.js";
-//import {Block_shader} from "./block_shader";
 
 const {
     Vector, Vector3, vec, vec3, vec4, color, hex_color, Shader, Matrix, Mat4, Light, Shape, Material, Scene,
@@ -180,9 +179,10 @@ export class Beyond_Tetris extends Scene {
             // Predict and show where the tetromino will fall
             this.tetromino_projection = this.current.get_projection_tetromino(this);
 
-            this.tetromino_projection.display(this, context, program_state, init_transform);
-            this.next_tetromino.display(this, context, program_state, init_transform);
             this.current.display(this, context, program_state, init_transform);
+            this.tetromino_projection.display(this, context, program_state, init_transform, true);
+            this.next_tetromino.display(this, context, program_state, init_transform);
+            //this.current.display(this, context, program_state, init_transform);
         }
     }
 }
