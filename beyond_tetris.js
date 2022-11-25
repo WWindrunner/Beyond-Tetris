@@ -2,9 +2,10 @@ import {defs, tiny} from './examples/common.js';
 import {Block, block_materials, block_colors} from './block.js';
 import {tetrominoes} from './tetromino.js';
 import {Field_Outline} from "./field_outline.js";
+import {Text_Line} from "./examples/text-demo.js";
 
 const {
-    Vector, Vector3, vec, vec3, vec4, color, hex_color, Shader, Matrix, Mat4, Light, Shape, Material, Scene,
+    Vector, Vector3, vec, vec3, vec4, color, hex_color, Shader, Matrix, Mat4, Light, Shape, Material, Texture, Scene,
 } = tiny;
 
 //Size of the map
@@ -31,19 +32,27 @@ export class Beyond_Tetris extends Scene {
         this.tetromino_projection = null;
         this.speed = 0.012;
         this.speed_mult = 1.0;
+        this.score = 0;
 
         this.shapes = {
             'block': new Block(),
             'outline': new Field_Outline(),
+            'text': new Text_Line(35),
         };
 
-        this.materials = block_materials;
+        // For text display
+        this.text_image = new Material(new defs.Textured_Phong(1), {
+            ambient: 1, diffusivity: 0, specularity: 0,
+            texture: new Texture("assets/text.png")
+        });
+        // For outline and block display
         this.white = new Material(new defs.Basic_Shader());
+        this.materials = block_materials;
 
         this.direction = null;
         this.rotation = null;
 
-        // generate a look at matrix with input eye position, center of interest, and up vector
+        // Generate a look at matrix with input eye position, center of interest, and up vector
         this.initial_camera_location = Mat4.look_at(vec3(0, MAX_LEVEL, 30), vec3(0, MAX_LEVEL, 0), vec3(0, 1, 0));
     }
 
@@ -139,6 +148,7 @@ export class Beyond_Tetris extends Scene {
             }
             if (is_filled) {
                 this.remove_level(level);
+                this.score += 10;
                 level--;
             }
         }
@@ -170,10 +180,6 @@ export class Beyond_Tetris extends Scene {
     // Main display function in Beyond_Tetris class.
     // Set up the camera, lighting, and draw everything.
     display(context, program_state) {
-        // if (this.game_over) {
-        //     return
-        // }
-
         if (!context.scratchpad.controls) {
             this.children.push(context.scratchpad.controls = new defs.Movement_Controls());
             // Define the global camera and projection matrices, which are stored in program_state.
@@ -187,18 +193,36 @@ export class Beyond_Tetris extends Scene {
         const light_position = vec4(0, 5, 5, 1);
         program_state.lights = [new Light(light_position, color(1, 1, 1, 1), 1000)];
 
-        // draw the outline
+        // Draw the outline
         let model_transform_outline = Mat4.identity();
         model_transform_outline = model_transform_outline.times(Mat4.translation(-1, MAX_LEVEL - 1, -1))
                                                          .times(Mat4.scale(MAX_ROW, MAX_LEVEL, MAX_COL));
-        this.shapes.outline.draw(context, program_state, model_transform_outline, this.white, "LINES")
+        this.shapes.outline.draw(context, program_state, model_transform_outline, this.white, "LINES");
 
         let model_transform = Mat4.identity();
-        this.t = program_state.animation_time;
-        //this.shapes.block.draw(context, program_state, model_transform, this.materials.plastic);
-
         const init_transform = model_transform.times(Mat4.translation(-1 * MAX_ROW, 0, -1 * MAX_COL));
         model_transform = init_transform;
+
+        // Write score and next block text
+        let text_transform = Mat4.identity();
+        text_transform = text_transform.times(Mat4.scale(NEXT_TETROMINO_POS[0], NEXT_TETROMINO_POS[1], NEXT_TETROMINO_POS[2]))
+                                       .times(Mat4.translation(0.8, 3, 0));
+        //console.log(text_transform);
+        this.shapes.text.set_string("Your Score: " + this.score, context.context);
+        this.shapes.text.draw(context, program_state,
+            text_transform.times(Mat4.scale(.06, .1, .1)), this.text_image);
+        // Move our basis down a line.
+        text_transform.post_multiply(Mat4.translation(0, -.5, 0));
+        if (this.game_over) {
+            this.shapes.text.set_string("Game Over!", context.context);
+            this.shapes.text.draw(context, program_state,
+                text_transform.times(Mat4.scale(.06, .1, .1)), this.text_image);
+        }
+        else {
+            this.shapes.text.set_string("Next Piece: ", context.context);
+            this.shapes.text.draw(context, program_state,
+                text_transform.times(Mat4.scale(.06, .1, .1)), this.text_image);
+        }
 
         // Display all blocks in the block_map
         for (let level = 0; level < MAX_LEVEL; level++) {
@@ -231,12 +255,15 @@ export class Beyond_Tetris extends Scene {
             //if (this.speed > 0.3)
             //    this.speed = 0.3;
 
+            // Check and remove filled levels
             this.check_level_filled();
+
             if (!this.current.check_collision(this)) {
                 this.current = null;
                 this.game_over = true;
                 console.log("Game Over!");
             }
+            this.score++;
         }
 
         if (this.current !== null) {
