@@ -93,10 +93,82 @@ export class Beyond_Tetris extends Scene {
         this.key_triggered_button("Rotate Y-axis", ["r"], () => this.rotation = vec3(0, 1, 0));
         this.new_line();
         this.key_triggered_button("Reset", ["Control", "r"], () => {this.initialize_map()});
+        this.new_line();
+        // For testing, some cheat keys to use
+        this.key_triggered_button("Cheat level 0", ["1"], () => {
+            for (let row = 0; row < MAX_ROW; row++) {
+                for (let col = 0; col < MAX_COL; col++) {
+                    this.block_map[0][row][col] = (row + col) % 8 + 1;
+                }
+            }
+            this.block_map[0][MAX_ROW - 1][MAX_COL - 1] = 0;
+        });
+        this.key_triggered_button("Cheat level 1", ["2"], () => {
+            for (let row = 0; row < MAX_ROW; row++) {
+                for (let col = 0; col < MAX_COL; col++) {
+                    this.block_map[1][row][col] = (row + col) % 2 + 1;
+                }
+            }
+            this.block_map[1][MAX_ROW - 1][MAX_COL - 1] = 0;
+        });
+        this.key_triggered_button("Cheat level 3", ["3"], () => {
+            for (let row = 0; row < MAX_ROW; row++) {
+                for (let col = 0; col < MAX_COL; col++) {
+                    this.block_map[3][row][col] = (row + col) % 4 + 1;
+                }
+            }
+            this.block_map[3][MAX_ROW - 1][MAX_COL - 1] = 0;
+        });
+    }
+
+    // Check each level if it is filled with blocks.
+    // If filled, call remove_level() on that level.
+    check_level_filled() {
+        for (let level = 0; level < MAX_LEVEL; level++) {
+            let is_filled = true;
+            for (let row = 0; row < MAX_ROW; row++) {
+                for (let col = 0; col < MAX_COL; col++) {
+                    if (this.block_map[level][row][col] === 0) {
+                        is_filled = false;
+                        break;
+                    }
+                }
+                if (!is_filled) {
+                    break;
+                }
+            }
+            if (is_filled) {
+                this.remove_level(level);
+                level--;
+            }
+        }
+    }
+
+    // Remove all blocks in block_map[index], then move all
+    // blocks above 1 unit down
+    // TODO: maybe we can add particle effects here
+    remove_level(index) {
+        for (let row = 0; row < MAX_ROW; row++) {
+            for (let col = 0; col < MAX_COL; col++) {
+                this.block_map[index][row][col] = 0;
+            }
+        }
+        for (let level = index; level < MAX_LEVEL; level++) {
+            for (let row = 0; row < MAX_ROW; row++) {
+                for (let col = 0; col < MAX_COL; col++) {
+                    if (level === MAX_LEVEL - 1) {
+                        this.block_map[level][row][col] = 0;
+                    }
+                    else {
+                        this.block_map[level][row][col] = this.block_map[level + 1][row][col];
+                    }
+                }
+            }
+        }
     }
 
     // Main display function in Beyond_Tetris class.
-    // Set up the camera, lighting, and draw everything
+    // Set up the camera, lighting, and draw everything.
     display(context, program_state) {
         // if (this.game_over) {
         //     return
@@ -153,9 +225,13 @@ export class Beyond_Tetris extends Scene {
             this.current.place_blocks(this);
             this.current = this.next_tetromino.copy(TETROMINO_SPAWN_POS);
             this.next_tetromino = tetrominoes[Math.floor(Math.random() * (8 - 1 + 1) + 1)].copy(NEXT_TETROMINO_POS);
-            this.speed += 0.001;
-            if (this.speed > 0.5)
-                this.speed = 0.5;
+
+            // For testing, disable speed increase to make it easier
+            //this.speed += 0.001;
+            //if (this.speed > 0.3)
+            //    this.speed = 0.3;
+
+            this.check_level_filled();
             if (!this.current.check_collision(this)) {
                 this.current = null;
                 this.game_over = true;

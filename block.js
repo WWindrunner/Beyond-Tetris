@@ -24,9 +24,10 @@ class Block extends Shape {
 }
 
 const block_materials = {
+    // Material for normal tetromino blocks
     plastic: new Material(new defs.Phong_Shader(),
         {ambient: .4, diffusivity: .6, color: hex_color("#ffffff")}),
-    // Need a transparent shader to show where the block will fall
+    // A transparent shader to show where the block will fall
     transparent: new Material(new Transparent_shader(),
         {ambient: .3, diffusivity: .3, color: hex_color("#ffffff")}),
 };
