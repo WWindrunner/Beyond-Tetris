@@ -249,7 +249,9 @@ export class Beyond_Tetris extends Scene {
             for (let row = 0; row < MAX_ROW; row++) {
                 for (let col = 0; col < MAX_COL; col++) {
                     if (this.block_map[level][row][col] !== 0) {
-                        // let transparency = row - this.current.get_depth();
+                        let transparency = 0;
+                        if (row > this.current.get_depth())
+                            transparency = 0.9;
                         // if (transparency < 0) transparency = 0;
                         // transparency = transparency / 4;
                         // console.log(transparency);
@@ -261,7 +263,7 @@ export class Beyond_Tetris extends Scene {
                                 ambient: this.materials.plastic.ambient,
                                 diffusivity: this.materials.plastic.diffusivity,
                                 specularity: 0,
-                                transparency: 0,
+                                transparency: transparency,
                             }));
                         
                         // Detect raycast with mouse

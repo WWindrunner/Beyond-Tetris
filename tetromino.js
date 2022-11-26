@@ -46,7 +46,7 @@ class Tetromino {
         for (let i = 0; i < 4; i++) {
             const block = this.blocks[i];
             const z = block[2] + this.position[2];
-            if (z > depth)
+            if (z < depth)
                 depth = z;
         }
         return depth;
