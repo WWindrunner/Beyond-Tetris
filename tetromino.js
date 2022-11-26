@@ -41,6 +41,17 @@ class Tetromino {
         });
     }
 
+    get_depth() {
+        let depth = 0;
+        for (let i = 0; i < 4; i++) {
+            const block = this.blocks[i];
+            const z = block[2] + this.position[2];
+            if (z > depth)
+                depth = z;
+        }
+        return depth;
+    }
+
     // rotate the tetromino 90 degree by the desired axis (x, y, z)
     rotate(game_state, axis) {
         const recenter = Mat4.translation(
@@ -102,7 +113,7 @@ class Tetromino {
                 dz = max_row - bz - 1;
         }
         
-        console.log(new_pos, dx, dz);
+        // console.log(new_pos, dx, dz);
 
         return vec3(
             new_pos[0] + dx,
@@ -124,7 +135,7 @@ class Tetromino {
             const by = block[1] + y;
             const bz = block[2] + z;
 
-            console.log(by, bz, bx);
+            // console.log(by, bz, bx);
             if (by < game_state.num_levels && block_map[by][bz][bx] !== 0)
                 return false;
         }
@@ -148,10 +159,8 @@ class Tetromino {
             const z = block[2] + this.position[2];
 
             // Tetromino hits the bottom of the stage
-            if (y < 0) {
-                // this.position[1] = Math.floor(this.position[1] + 1);
+            if (y < 0)
                 return true;
-            }
 
             // if there's a block in block map right below this current block, return true
             if (y < game_state.num_levels && block_map[y][z][x] !== 0) {
