@@ -52,7 +52,7 @@ class Tetromino {
         return depth;
     }
 
-    // rotate the tetromino 90 degree by the desired axis (x, y, z)
+    // Rotate the tetromino 90 degree by the desired axis (x, y, z)
     rotate(game_state, axis) {
         const recenter = Mat4.translation(
             this.center_of_rotation[0],
@@ -78,7 +78,7 @@ class Tetromino {
         }
     }
 
-    // translate the tetromino one block distance to the desired direction
+    // Translate the tetromino one block distance to the desired direction
     // (up, down, left, right) horizontally
     move(direction, game_state) {
         const new_position = vec3(
@@ -171,6 +171,7 @@ class Tetromino {
         return false;
     }
 
+    // Return the indicator of the current tetromino
     get_projection_tetromino(game_state) {
         const y = this.position[1];
 

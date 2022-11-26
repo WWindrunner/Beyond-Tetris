@@ -1,6 +1,7 @@
 import {defs, tiny} from './examples/common.js';
 
 import {Transforms_Sandbox} from "./examples/transforms-sandbox.js"
+import {Text_Demo} from "./examples/text-demo.js"
 import {Beyond_Tetris} from "./beyond_tetris.js"
 // Pull these names into this module's scope for convenience:
 const {
@@ -19,7 +20,7 @@ const {
 const Minimal_Webgl_Demo = defs.Minimal_Webgl_Demo;
 
 Object.assign(defs,
-            {Transforms_Sandbox}, {Beyond_Tetris: Beyond_Tetris});
+            {Transforms_Sandbox}, {Beyond_Tetris: Beyond_Tetris}, {Text_Demo});
 
 // ******************** End extra step
 
