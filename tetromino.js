@@ -27,16 +27,12 @@ class Tetromino {
                 2 * (block[2] + this.position[2])
             ));
 
-            if (is_projection) {
-                game_state.shapes.block.draw(context, program_state, block_model_transform,
-                    game_state.materials.transparent.override({color: block_colors[this.id]})
-                );
-            }
-            else {
-                game_state.shapes.block.draw(context, program_state, block_model_transform,
-                    game_state.materials.plastic.override({color: block_colors[this.id]})
-                );
-            }
+            game_state.shapes.block.draw(context, program_state, block_model_transform,
+                game_state.materials.block_mat.override({
+                    color: block_colors[this.id],
+                    transparency: is_projection ? 0.5 : 0,
+                })
+            );
 
         });
     }
@@ -46,7 +42,7 @@ class Tetromino {
         for (let i = 0; i < 4; i++) {
             const block = this.blocks[i];
             const z = block[2] + this.position[2];
-            if (z < depth)
+            if (z > depth)
                 depth = z;
         }
         return depth;

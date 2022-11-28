@@ -183,10 +183,6 @@ export class Beyond_Tetris extends Scene {
     // Main display function in Beyond_Tetris class.
     // Set up the camera, lighting, and draw everything.
     display(context, program_state) {
-        // if (this.game_over) {
-        //     return
-        // }
-
         if (this.first_frame) {
             // this.children.push(context.scratchpad.controls = new defs.Movement_Controls());
             // Define the global camera and projection matrices, which are stored in program_state.
@@ -199,6 +195,11 @@ export class Beyond_Tetris extends Scene {
             canvas.addEventListener("mousemove", e => {
                 e.preventDefault();
                 this.mouse_position = mouse_position(e);
+            });
+            canvas.addEventListener("mousedown", e => {
+                e.preventDefault();
+                this.current.position = this.tetromino_projection.position;
+                this.drop_blocks();
             });
 
             this.first_frame = false;
@@ -222,28 +223,18 @@ export class Beyond_Tetris extends Scene {
         model_transform = init_transform;
 
         let raycast = undefined;
-      
-        // Write score and next block text
-        let text_transform = Mat4.identity();
-        text_transform = text_transform.times(Mat4.scale(NEXT_TETROMINO_POS[0], NEXT_TETROMINO_POS[1], NEXT_TETROMINO_POS[2]))
-                                       .times(Mat4.translation(0.8, 3, 0));
-        //console.log(text_transform);
-        this.shapes.text.set_string("Your Score: " + this.score, context.context);
-        this.shapes.text.draw(context, program_state,
-            text_transform.times(Mat4.scale(.06, .1, .1)), this.text_image);
-        // Move our basis down a line.
-        text_transform.post_multiply(Mat4.translation(0, -.5, 0));
-        if (this.game_over) {
-            this.shapes.text.set_string("Game Over!", context.context);
-            this.shapes.text.draw(context, program_state,
-                text_transform.times(Mat4.scale(.06, .1, .1)), this.text_image);
-        }
-        else {
-            this.shapes.text.set_string("Next Piece: ", context.context);
-            this.shapes.text.draw(context, program_state,
-                text_transform.times(Mat4.scale(.06, .1, .1)), this.text_image);
-        }
 
+        this.draw_text(context, program_state);
+
+        if (this.current !== null) {
+            // Predict and show where the tetromino will fall
+            this.tetromino_projection = this.current.get_projection_tetromino(this);
+
+            this.current.display(this, context, program_state, init_transform);
+            this.tetromino_projection.display(this, context, program_state, init_transform, true);
+            this.next_tetromino.display(this, context, program_state, init_transform);
+        }
+    
         // Display all blocks in the block_map
         for (let level = 0; level < MAX_LEVEL; level++) {
             for (let row = 0; row < MAX_ROW; row++) {
@@ -252,13 +243,10 @@ export class Beyond_Tetris extends Scene {
                         let transparency = 0;
                         if (row > this.current.get_depth())
                             transparency = 0.9;
-                        // if (transparency < 0) transparency = 0;
-                        // transparency = transparency / 4;
-                        // console.log(transparency);
 
                         // Draw block
                         this.shapes.block.draw(context, program_state, model_transform,
-                            this.materials.transparent.override({
+                            this.materials.block_mat.override({
                                 color: block_colors[this.block_map[level][row][col]],
                                 ambient: this.materials.plastic.ambient,
                                 diffusivity: this.materials.plastic.diffusivity,
@@ -278,7 +266,6 @@ export class Beyond_Tetris extends Scene {
 
         if (raycast === undefined && this.mouse_position) {
             const PCM = program_state.projection_transform.times(program_state.camera_inverse).times(init_transform);
-            const PCM_inv = Mat4.inverse(PCM);
             const PCM_normal = Mat4.inverse(PCM.transposed());
             
             let floor_pos = PCM.times(vec4(0, 0, 0, 1));
@@ -300,27 +287,7 @@ export class Beyond_Tetris extends Scene {
         
         // reset when block collide or hit the bottom
         if (this.current && this.current.detect_collision(this, curr_speed)) {
-            // place the tetromino into block map
-            console.log("Placed blocks!");
-            this.current.place_blocks(this);
-            this.current = this.next_tetromino.copy(TETROMINO_SPAWN_POS);
-            this.current.position = this.current.fix_bounds(this.num_rows, this.num_cols);
-            this.next_tetromino = tetrominoes[Math.floor(Math.random() * (8 - 1 + 1) + 1)].copy(NEXT_TETROMINO_POS);
-
-            // For testing, disable speed increase to make it easier
-            //this.speed += 0.0005;
-            //if (this.speed > 0.3)
-            //    this.speed = 0.3;
-
-            // Check and remove filled levels
-            this.check_level_filled();
-             if (!this.current.check_collision(this)) {
-                console.log("Game Over!");
-                console.log(this.current);
-                this.current = null;
-                this.game_over = true;
-            }
-            this.score++;
+            this.drop_blocks();
         }
 
         if (this.current !== null) {
@@ -352,19 +319,60 @@ export class Beyond_Tetris extends Scene {
                 this.current.rotate(this, this.rotation);
                 this.rotation = null;
             }
+        }
 
-            // Predict and show where the tetromino will fall
-            this.tetromino_projection = this.current.get_projection_tetromino(this);
+        this.mouse_position = null;
+    }
 
-            this.current.display(this, context, program_state, init_transform);
-            this.tetromino_projection.display(this, context, program_state, init_transform, true);
-            this.next_tetromino.display(this, context, program_state, init_transform);
+    drop_blocks() {
+        // place the tetromino into block map
+        console.log("Placed blocks!");
+        this.current.place_blocks(this);
+        this.current = this.next_tetromino.copy(TETROMINO_SPAWN_POS);
+        this.current.position = this.current.fix_bounds(this.num_rows, this.num_cols);
+        this.next_tetromino = tetrominoes[Math.floor(Math.random() * (8 - 1 + 1) + 1)].copy(NEXT_TETROMINO_POS);
+
+        // For testing, disable speed increase to make it easier
+        this.speed += 0.0001;
+        if (this.speed > 0.3)
+        this.speed = 0.3;
+
+        // Check and remove filled levels
+        this.check_level_filled();
+        if (!this.current.check_collision(this)) {
+            console.log("Game Over!");
+            console.log(this.current);
+            this.current = null;
+            this.game_over = true;
+        }
+        this.score++;
+    }
+
+    draw_text(context, program_state) {
+        // Write score and next block text
+        let text_transform = Mat4.identity();
+        text_transform = text_transform.times(Mat4.scale(NEXT_TETROMINO_POS[0], NEXT_TETROMINO_POS[1], NEXT_TETROMINO_POS[2]))
+                                        .times(Mat4.translation(0.8, 3, 0));
+        //console.log(text_transform);
+        this.shapes.text.set_string("Your Score: " + this.score, context.context);
+        this.shapes.text.draw(context, program_state,
+            text_transform.times(Mat4.scale(.06, .1, .1)), this.text_image);
+        // Move our basis down a line.
+        text_transform.post_multiply(Mat4.translation(0, -.5, 0));
+        if (this.game_over) {
+            this.shapes.text.set_string("Game Over!", context.context);
+            this.shapes.text.draw(context, program_state,
+                text_transform.times(Mat4.scale(.06, .1, .1)), this.text_image);
+        }
+        else {
+            this.shapes.text.set_string("Next Piece: ", context.context);
+            this.shapes.text.draw(context, program_state,
+                text_transform.times(Mat4.scale(.06, .1, .1)), this.text_image);
         }
     }
 
     detect_raycast(program_state, model_transform, closest_cast, margin=0.01) {
         if (this.mouse_position) {
-            // const projection_camera_matrix = ;
             const PCM = program_state.projection_transform.times(program_state.camera_inverse).times(model_transform);
             const PCM_inv = Mat4.inverse(PCM);
             const PCM_normal = Mat4.inverse(PCM.transposed());
@@ -375,7 +383,6 @@ export class Beyond_Tetris extends Scene {
 
                 face_pos.scale_by(1/face_pos[3]);
                 face_norm = face_norm.to3().normalized();
-                // console.log(face_norm);
 
                 if (Math.abs(face_norm[2]) < margin)
                     continue;
