@@ -132,7 +132,7 @@ class Tetromino {
             const bz = block[2] + z;
 
             // console.log(by, bz, bx);
-            if (by < game_state.num_levels && block_map[by][bz][bx] !== 0)
+            if (by < game_state.num_levels && by >= 0 && block_map[by][bz][bx] !== 0)
                 return false;
         }
         return true;

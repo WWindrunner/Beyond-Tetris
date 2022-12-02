@@ -292,21 +292,9 @@ export class Beyond_Tetris extends Scene {
         }
 
         if (raycast === undefined && this.mouse_position) {
-            const PCM = program_state.projection_transform.times(program_state.camera_inverse).times(init_transform);
-            const PCM_normal = Mat4.inverse(PCM.transposed());
-            
-            let floor_pos = PCM.times(vec4(0, 0, 0, 1));
-            let floor_norm = PCM_normal.times(vec4(0, 1, 0, 0));
-
-            floor_pos.scale_by(1/floor_pos[3]);
-            floor_norm = floor_norm.to3().normalized();
-
-            if (Math.abs(floor_norm[2]) > 0.01) {
-                const z = (floor_norm.dot(floor_pos.to3()) - floor_norm[0] * this.mouse_position[0] - floor_norm[1] * this.mouse_position[1]) / floor_norm[2];
-                if (z <= 1 && z >= 0) {
-                    raycast = vec3(this.mouse_position[0], this.mouse_position[1], z);
-                }
-            }
+            raycast = this.detect_raycast_floor(program_state, init_transform);
+            if (!raycast)
+                raycast = this.detect_raycast_wall(program_state, model_transform_outline);
         }
 
         const curr_speed = this.speed * this.speed_mult;
@@ -396,6 +384,44 @@ export class Beyond_Tetris extends Scene {
             this.shapes.text.draw(context, program_state,
                 text_transform.times(Mat4.scale(.06, .1, .1)), this.text_image);
         }
+    }
+
+    detect_raycast_floor(program_state, init_transform, margin=0.01) {
+        const PCM = program_state.projection_transform.times(program_state.camera_inverse).times(init_transform);
+        const PCM_normal = Mat4.inverse(PCM.transposed());
+        
+        let floor_pos = PCM.times(vec4(0, 0, 0, 1));
+        let floor_norm = PCM_normal.times(vec4(0, 1, 0, 0));
+
+        floor_pos.scale_by(1/floor_pos[3]);
+        floor_norm = floor_norm.to3().normalized();
+
+        if (Math.abs(floor_norm[2]) > margin) {
+            const z = (floor_norm.dot(floor_pos.to3()) - floor_norm[0] * this.mouse_position[0] - floor_norm[1] * this.mouse_position[1]) / floor_norm[2];
+            if (z <= 1 && z >= 0) {
+                return vec3(this.mouse_position[0], this.mouse_position[1], z);
+            }
+        }
+        return undefined;
+    }
+
+    detect_raycast_wall(program_state, outline_model_transform, margin=0.01) {
+        const PCM = program_state.projection_transform.times(program_state.camera_inverse).times(outline_model_transform);
+        const PCM_normal = Mat4.inverse(PCM.transposed());
+        
+        let wall_pos = PCM.times(vec4(1, 1, -1, 1));
+        let wall_norm = PCM_normal.times(vec4(0, 0, -1, 0));
+
+        wall_pos.scale_by(1/wall_pos[3]);
+        wall_norm = wall_norm.to3().normalized();
+
+        if (Math.abs(wall_norm[2]) > margin) {
+            const z = (wall_norm.dot(wall_pos.to3()) - wall_norm[0] * this.mouse_position[0] - wall_norm[1] * this.mouse_position[1]) / wall_norm[2];
+            if (z <= 1 && z >= 0) {
+                return vec3(this.mouse_position[0], this.mouse_position[1], z);
+            }
+        }
+        return undefined;
     }
 
     detect_raycast(program_state, model_transform, closest_cast, margin=0.01) {
