@@ -35,11 +35,14 @@ export class Beyond_Tetris extends Scene {
         this.speed = 0.01;
         this.speed_mult = 1.0;
         this.score = 0;
+        this.num_particles = 100;
+        this.particle_duration = 0.7;
 
         this.shapes = {
             'block': new Block(),
             'outline': new Field_Outline(),
             'text': new Text_Line(35),
+            'particle': new particle(this.num_particles)
         };
 
         // For text display
@@ -50,6 +53,8 @@ export class Beyond_Tetris extends Scene {
         // For outline and block display
         this.white = new Material(new defs.Basic_Shader());
         this.materials = block_materials;
+        this.particle_material = new Material(new Particles_Shader(), {
+            color: hex_color("#80290b"), ambient: 0.2, diffusivity: 1, specularity: 1});
 
         this.direction = null;
         this.rotation = null;
@@ -57,6 +62,9 @@ export class Beyond_Tetris extends Scene {
         // generate a look at matrix with input eye position, center of interest, and up vector
         this.initial_camera_location = Mat4.look_at(vec3(0, MAX_LEVEL, MAX_LEVEL * 3), vec3(0, MAX_LEVEL, 0), vec3(0, 1, 0));
         this.first_frame = true;
+
+        // generate particles once a level is cleared
+        this.show_particles = false;
     }
 
     // Initialize the block_map, set all values to 0
@@ -178,6 +186,9 @@ export class Beyond_Tetris extends Scene {
                 }
             }
         }
+
+        // begin particle generation
+        this.show_particles = true;
     }
 
     // Main display function in Beyond_Tetris class.
@@ -207,7 +218,7 @@ export class Beyond_Tetris extends Scene {
 
         program_state.projection_transform = Mat4.perspective(
             Math.PI / 4, context.width / context.height, 1, 100);
-
+        let dt = program_state.animation_delta_time / 1000;
         // Lights: Values of vector or point lights.
         const light_position = vec4(0, 5, 5, 1);
         program_state.lights = [new Light(light_position, color(1, 1, 1, 1), 1000)];
@@ -219,6 +230,7 @@ export class Beyond_Tetris extends Scene {
         this.shapes.outline.draw(context, program_state, model_transform_outline, this.white, "LINES");
         
         let model_transform = Mat4.identity();
+        let particle_transform = Mat4.identity();
         const init_transform = model_transform.times(Mat4.translation(-1 * MAX_ROW, 0, -1 * MAX_COL));
         model_transform = init_transform;
 
@@ -262,6 +274,21 @@ export class Beyond_Tetris extends Scene {
                 model_transform = model_transform.times(Mat4.translation(-2 * MAX_COL, 0, 2));
             }
             model_transform = model_transform.times(Mat4.translation(0, 2, -2 * MAX_ROW));
+        }
+
+        // generate particles
+        if (this.show_particles) {
+            particle_transform = particle_transform.times(Mat4.translation(-5, -5, -5));
+            // move the particles downward by subtracting the offset array, which is 
+            // later fed into the shader to generate particles.
+            this.shapes.particle.arrays.offset = this.shapes.particle.arrays.offset.map(x => x.minus(vec3(0, 0.1, 0)));
+            this.shapes.particle.draw(context, program_state, particle_transform, this.particle_material); 
+            this.shapes.particle.copy_onto_graphics_card(context.context, ["offset"], false);
+            this.particle_duration -= dt;
+            if (this.particle_duration <= 0) {
+                this.particle_duration = 0.7;
+                this.show_particles = false;
+            }
         }
 
         if (raycast === undefined && this.mouse_position) {
@@ -412,3 +439,79 @@ export class Beyond_Tetris extends Scene {
        return closest_cast;
     }
 }
+class particle extends Shape {
+        constructor(num_particles) {
+            super("position", "normal", "texture_coord", "offset");
+            for (let i = 0; i < num_particles; i++) {
+                // combine all particles into one shape
+                defs.Square.insert_transformed_copy_into(this, [9], Mat4.identity());
+            }
+            // randomize the initial position of particles
+            const offsets = Array(num_particles).fill(0).map(x=>vec3(4,-4,4).randomized(8));
+            // map each offset to four vertext positions for the entire shape
+            this.arrays.offset = this.arrays.position.map((x, i)=> offsets[Math.floor(i/4)]);
+        }
+    };
+class Particles_Shader extends defs.Phong_Shader {
+        // **Textured_Phong** is a Phong Shader extended to addditionally decal a
+        // texture image over the drawn shape, lined up according to the texture
+        // coordinates that are stored at each shape vertex.
+        vertex_glsl_code() {
+            // ********* VERTEX SHADER *********
+            return this.shared_glsl_code() + `
+                varying vec2 f_tex_coord;
+                attribute vec3 position, normal, offset;                            
+                // Position is expressed in object coordinates.
+                attribute vec2 texture_coord;
+                
+                uniform mat4 model_transform;
+                uniform mat4 projection_camera_model_transform;
+                
+                void main(){                                                                   
+                    // Change the texture position based on offset (Move the particles)
+                    vec3 temp = offset;
+                    temp[1] = mod(temp[1], 4.0);
+                    gl_Position = projection_camera_model_transform * vec4(position + temp, 1.0 );
+                    // The final normal vector in screen space.
+                    N = normalize( mat3( model_transform ) * normal / squared_scale);
+                    vertex_worldspace = ( model_transform * vec4( position, 1.0 ) ).xyz;
+                    // Turn the per-vertex texture coordinate into an interpolated variable.
+                    f_tex_coord = texture_coord;
+                  } `;
+        }
+
+        fragment_glsl_code() {
+            // ********* FRAGMENT SHADER *********
+            // A fragment is a pixel that's overlapped by the current triangle.
+            // Fragments affect the final image or get discarded due to depth.
+            return this.shared_glsl_code() + `
+                varying vec2 f_tex_coord;
+                uniform sampler2D texture;
+                uniform float animation_time;
+                
+                void main(){
+                    // Sample the texture image in the correct place:
+                    vec4 tex_color = vec4(0.05/(distance(f_tex_coord, vec2(.5,.5))));
+                    if( tex_color.w < .7 ) discard;
+                                                                             // Compute an initial (ambient) color:
+                    gl_FragColor = vec4( ( tex_color.xyz + shape_color.xyz ) * ambient, shape_color.w * tex_color.w ); 
+                                                                             // Compute the final color with contributions from lights:
+                    gl_FragColor.xyz += phong_model_lights( normalize( N ), vertex_worldspace );
+                  } `;
+        }
+
+        update_GPU(context, gpu_addresses, gpu_state, model_transform, material) {
+            // update_GPU(): Define how to synchronize our JavaScript's variables to the GPU's.  This is where the shader
+            // recieves ALL of its inputs.  Every value the GPU wants is divided into two categories:  Values that belong
+            // to individual objects being drawn (which we call "Material") and values belonging to the whole scene or
+            // program (which we call the "Program_State").  Send both a material and a program state to the shaders
+            // within this function, one data field at a time, to fully initialize the shader for a draw.
+    
+            // Fill in any missing fields in the Material object with custom defaults for this shader:
+            const defaults = {color: color(0, 0, 0, 1), ambient: 0, diffusivity: 1, specularity: 1, smoothness: 40};
+            material = Object.assign({}, defaults, material);
+    
+            this.send_material(context, gpu_addresses, material);
+            this.send_gpu_state(context, gpu_addresses, gpu_state, model_transform);
+        }
+    }
